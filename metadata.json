@@ -1,0 +1,6 @@
+{
+  "name": "Underground DJ Monolith",
+  "description": "An immersive, tactical subterranean industrial DJ performance deck and production system featuring dual virtual vinyl turntables, step sequencers, tape Spool capture/WAV export, atmospheric field modulators, and local session presets powered by Web Audio API.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

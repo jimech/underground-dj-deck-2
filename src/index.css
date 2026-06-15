@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+@theme {
+  --color-zinc-805: var(--bg-805, #222226);
+  --color-zinc-820: var(--bg-820, #1d1d22);
+  --color-zinc-850: var(--bg-850, #16161b);
+  
+  --color-zinc-950: var(--bg-950, #09090b);
+  --color-zinc-900: var(--bg-900, #18181b);
+  --color-zinc-800: var(--bg-800, #27272a);
+  --color-zinc-700: var(--bg-700, #3f3f46);
+  --color-zinc-650: var(--bg-650, #4c4c56);
+  --color-zinc-600: var(--bg-600, #52525b);
+  --color-zinc-500: var(--bg-500, #71717a);
+  --color-zinc-400: var(--bg-400, #a1a1aa);
+  --color-zinc-300: var(--bg-300, #d4d4d8);
+  --color-zinc-200: var(--bg-200, #e4e4e7);
+  --color-zinc-100: var(--bg-100, #f4f4f5);
+  
+  --color-orange-500: var(--accent-500, #f97316);
+  --color-orange-400: var(--accent-400, #fb923c);
+  --color-orange-600: var(--accent-600, #ea580c);
+  --color-orange-950: var(--accent-950, #451a03);
+  --color-orange-900: var(--accent-900, #7c2d12);
+
+  --color-white: var(--text-white-override, #ffffff);
+  --color-black: var(--bg-black-override, #000000);
+
+  --grid-template-columns-16: repeat(16, minmax(0, 1fr));
+}
+
+/* Theme Configuration Blocks */
+:root {
+  /* --- MONOLITH NORMAL (DEFAULT DARK) --- */
+  --bg-950: #070709;
+  --bg-900: #0f0f13;
+  --bg-850: #16161b;
+  --bg-820: #1d1d22;
+  --bg-805: #222226;
+  --bg-800: #27272a;
+  --bg-700: #3f3f46;
+  --bg-650: #4c4c56;
+  --bg-600: #52525b;
+  --bg-500: #71717a;
+  --bg-400: #a1a1aa;
+  --bg-300: #d4d4d8;
+  --bg-200: #e4e4e7;
+  --bg-100: #f4f4f5;
+  
+  --accent-500: #f97316;
+  --accent-400: #fb923c;
+  --accent-600: #ea580c;
+  --accent-950: #451a03;
+  --accent-900: #7c2d12;
+  
+  --text-white-override: #ffffff;
+  --bg-black-override: #000000;
+}
+
+[data-theme="light"] {
+  /* --- SILVER RIG (LIGHT INDUSTRIAL) --- */
+  --bg-950: #ececef;
+  --bg-900: #dfdfe4;
+  --bg-850: #ccccd2;
+  --bg-820: #c1c1c8;
+  --bg-805: #b1b1b9;
+  --bg-800: #a0a0aa;
+  --bg-700: #71717a;
+  --bg-650: #52525b;
+  --bg-600: #3f3f46;
+  --bg-500: #2a2a32;
+  --bg-400: #1f1f25;
+  --bg-300: #121217;
+  --bg-200: #09090c;
+  --bg-100: #050508;
+  
+  --accent-500: #2563eb; /* Industrial Blueprint/Laboratory Blue */
+  --accent-400: #3b82f6;
+  --accent-600: #1d4ed8;
+  --accent-950: #eff6ff;
+  --accent-900: #dbeafe;
+  
+  --text-white-override: #060609;
+  --bg-black-override: #ffffff;
+}
+
+[data-theme="dark"] {
+  /* --- ACID OBSIDIAN (DEEP OLED BLACK & PURPLE GLOW) --- */
+  --bg-950: #010101;
+  --bg-900: #050507;
+  --bg-850: #0a0a0f;
+  --bg-820: #111116;
+  --bg-805: #15151a;
+  --bg-800: #181820;
+  --bg-700: #292933;
+  --bg-650: #3f3f46;
+  --bg-600: #4c4c56;
+  --bg-500: #52525b;
+  --bg-400: #a1a1aa;
+  --bg-300: #d4d4d8;
+  --bg-200: #e4e4e7;
+  --bg-100: #f4f4f5;
+  
+  --accent-500: #d946ef; /* Intense acid electronic magenta laser */
+  --accent-400: #f472b6;
+  --accent-600: #c084fc;
+  --accent-950: #22021d;
+  --accent-900: #3d0534;
+  
+  --text-white-override: #ffffff;
+  --bg-black-override: #000000;
+}
+
+[data-theme="90s"] {
+  /* --- TOKYO CYBER RAVE (VIVID VAPOR RAVE / AMIGA ACID TRACKER) --- */
+  --bg-950: #0d0626; /* Deep cosmic vapor cabinet */
+  --bg-900: #1a0a40; /* Retro midnight arcade purple */
+  --bg-850: #2b115b; /* Vivid dark ultraviolet */
+  --bg-820: #371572;
+  --bg-805: #441987;
+  --bg-800: #54209e;
+  --bg-700: #c084fc;
+  --bg-650: #f472b6;
+  --bg-600: #eb5ef5;
+  --bg-500: #ec4899;
+  --bg-400: #22d3ee; /* Bright high-contrast cyan info labels */
+  --bg-300: #06b6d4;
+  --bg-200: #22c55e; /* Cyber green highlights */
+  --bg-100: #fed7aa; /* Soft orange/cream screens */
+  
+  --accent-500: #f43f5e; /* Hyper vibrant cyber-rose pink */
+  --accent-400: #fb7185;
+  --accent-600: #be123c;
+  --accent-950: #3b071e;
+  --accent-900: #5c072b;
+  
+  --text-white-override: #fcff41; /* Phosphored radioactive yellow display text */
+  --bg-black-override: #060111;
+}
+
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes scanswipe {
+  0% {
+    top: -5%;
+  }
+  100% {
+    top: 105%;
+  }
+}
+
+.animate-scanswipe {
+  animation: scanswipe 0.7s cubic-bezier(0.15, 0.85, 0.35, 1) infinite;
+}
+
+.scanline-overlay {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.22) 50%
+  );
+  background-size: 100% 4px;
+}
+
