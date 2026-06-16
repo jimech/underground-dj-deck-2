@@ -6,15 +6,19 @@ import { MOOD_PRESETS, MoodPreset } from '../utils/presets';
 import { 
   User, Save, FileDown, FileUp, Music, Upload, Trash2, 
   Sparkles, Award, Clock, Disc, ArrowRight, CheckCircle2, ChevronRight, X,
-  Shield, RefreshCw, Share2, Copy, ExternalLink, Code, FileImage
+  Shield, RefreshCw, Share2, Copy, ExternalLink, Code, FileImage, Pencil
 } from 'lucide-react';
 import { serializeSession, deserializeSession, type VersionedSession } from '../utils/sessionCodec';
 import {
+  deleteSession as deleteCloudSession,
   generateSessionNames,
   getProfile as getCloudProfile,
   getSession as getCloudSession,
+  listSessions as listCloudSessions,
   saveProfile as saveCloudProfile,
   saveSession as saveCloudSession,
+  updateSession as updateCloudSession,
+  type SessionResponse,
 } from '../lib/apiClient';
 import { supabaseBrowserClient } from '../lib/supabaseClient';
 
@@ -74,6 +78,8 @@ export default function UserProfileAndSessionManager() {
   const [isCloudSaving, setIsCloudSaving] = useState(false);
   const [lastCloudShareUrl, setLastCloudShareUrl] = useState('');
   const [isGeneratingSessionName, setIsGeneratingSessionName] = useState(false);
+  const [cloudSessions, setCloudSessions] = useState<SessionResponse[]>([]);
+  const [isCloudLibraryLoading, setIsCloudLibraryLoading] = useState(false);
 
   useEffect(() => {
     if (!supabaseBrowserClient) {
@@ -275,6 +281,34 @@ export default function UserProfileAndSessionManager() {
       setStatusMessage({ text: '', type: 'info' });
     }, 4000);
   };
+
+  const refreshCloudSessions = async (showAlert = false) => {
+    if (!authUser) {
+      setCloudSessions([]);
+      return;
+    }
+
+    setIsCloudLibraryLoading(true);
+    try {
+      const result = await listCloudSessions();
+      if (result.ok === false) {
+        const detail = result.detail ? ` ${result.detail}` : '';
+        triggerAlert(`Cloud library unavailable.${detail}`, 'error');
+        return;
+      }
+
+      setCloudSessions(result.data.sessions);
+      if (showAlert) triggerAlert('Cloud library refreshed.', 'success');
+    } catch (err: any) {
+      triggerAlert(err?.message || 'Cloud library unavailable.', 'error');
+    } finally {
+      setIsCloudLibraryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshCloudSessions();
+  }, [authUser]);
 
   // --- Audio File Importer / Decoder ---
   const handleDragOver = (e: React.DragEvent) => {
@@ -507,6 +541,7 @@ export default function UserProfileAndSessionManager() {
       }
 
       setLastCloudShareUrl(result.data.shareUrl);
+      setCloudSessions((current) => [result.data, ...current.filter((session) => session.id !== result.data.id)]);
       try {
         await navigator.clipboard.writeText(result.data.shareUrl);
         setCopiedShareLink(true);
@@ -687,13 +722,49 @@ export default function UserProfileAndSessionManager() {
     }
   };
 
-  const deleteSession = (id: string, e: React.MouseEvent) => {
+  const deleteLocalSession = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const filtered = savedSessions.filter(s => s.id !== id);
     setSavedSessions(filtered);
     localStorage.setItem('dj_saved_sessions', JSON.stringify(filtered));
     if (selectedSessionId === id) setSelectedSessionId(null);
     triggerAlert('Session scrubbed from safe.', 'info');
+  };
+
+  const removeCloudSession = async (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const result = await deleteCloudSession(sessionId);
+    if (result.ok === false) {
+      triggerAlert(result.detail || result.error || 'Cloud session delete failed.', 'error');
+      return;
+    }
+
+    setCloudSessions((current) => current.filter((session) => session.id !== sessionId));
+    if (selectedSessionId === sessionId) setSelectedSessionId(null);
+    triggerAlert('Cloud session deleted.', 'success');
+  };
+
+  const renameCloudSession = async (cloudSession: SessionResponse, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const nextName = window.prompt('Rename cloud mix', cloudSession.session.name || 'Untitled Cloud Mix')?.trim();
+    if (!nextName || nextName === cloudSession.session.name) return;
+
+    const renamedSession: VersionedSession = {
+      ...cloudSession.session,
+      name: nextName,
+      timestamp: Date.now(),
+    };
+    const result = await updateCloudSession(cloudSession.id, renamedSession);
+    if (result.ok === false) {
+      triggerAlert(result.detail || result.error || 'Cloud session rename failed.', 'error');
+      return;
+    }
+
+    setCloudSessions((current) => current.map((session) => (
+      session.id === cloudSession.id ? result.data : session
+    )));
+    triggerAlert('Cloud session renamed.', 'success');
   };
 
   const exportSession = (session: any, e: React.MouseEvent) => {
@@ -1286,6 +1357,116 @@ export default function UserProfileAndSessionManager() {
           </div>
         </div>
 
+        {/* Signed-in Cloud Session Library */}
+        <div className="flex flex-col gap-2 border-t border-zinc-850/60 pt-3">
+          <div className="flex justify-between items-center text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
+            <span>Cloud Sessions</span>
+            <button
+              type="button"
+              onClick={() => refreshCloudSessions(true)}
+              disabled={!authUser || isCloudLibraryLoading}
+              className="flex items-center gap-1 text-cyan-300 hover:text-cyan-200 disabled:text-zinc-700 disabled:cursor-not-allowed text-[8px] uppercase tracking-widest transition"
+              title="Refresh signed-in cloud sessions"
+            >
+              <RefreshCw size={10} className={isCloudLibraryLoading ? 'animate-spin' : ''} />
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          {!authUser ? (
+            <div className="py-4 px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed">
+              Sign in to keep a cloud library of saved mixes.
+            </div>
+          ) : cloudSessions.length === 0 ? (
+            <div className="py-4 px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed">
+              No cloud mixes yet.
+              <span className="block text-[7px] text-zinc-650 mt-1">Click Cloud Link to save this rig to your account.</span>
+            </div>
+          ) : (
+            <div className="max-h-[132px] overflow-y-auto gap-2 flex flex-col pr-1">
+              {cloudSessions.map((cloudSession) => {
+                const isSelected = selectedSessionId === cloudSession.id;
+                const sessionNameLabel = cloudSession.session.name || 'Untitled Cloud Mix';
+
+                return (
+                  <div
+                    key={cloudSession.id}
+                    onClick={() => {
+                      loadSession(cloudSession.session);
+                      setSelectedSessionId(cloudSession.id);
+                      setLastCloudShareUrl(cloudSession.shareUrl);
+                    }}
+                    className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border cursor-pointer transition-all duration-150 group ${
+                      isSelected
+                        ? 'bg-cyan-500/10 border-cyan-500/70 shadow-[0_0_8px_rgba(34,211,238,0.12)]'
+                        : 'bg-zinc-950/50 border-zinc-850 hover:border-cyan-800/80 hover:bg-zinc-900/40'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-cyan-300 animate-pulse' : 'bg-zinc-600'}`} />
+                      <div className="flex flex-col min-w-0">
+                        <span className={`text-[9px] font-mono font-extrabold uppercase tracking-wide truncate ${
+                          isSelected ? 'text-cyan-300' : 'text-zinc-200'
+                        }`}>
+                          {sessionNameLabel}
+                        </span>
+                        <span className="text-[7px] text-zinc-500 font-mono tracking-widest mt-0.5 uppercase">
+                          {new Date(cloudSession.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })} at {new Date(cloudSession.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {cloudSession.visibility}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={(e) => renameCloudSession(cloudSession, e)}
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-cyan-300 hover:bg-cyan-950/15 transition"
+                        title="Rename cloud mix"
+                      >
+                        <Pencil size={10} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.dispatchEvent(new CustomEvent('open-poster-generator', {
+                            detail: { sessionName: sessionNameLabel, bpm: cloudSession.session.data?.bpm || audio.bpm }
+                          }));
+                        }}
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-orange-400 hover:bg-orange-950/15 transition"
+                        title="Generate club poster flyer"
+                      >
+                        <FileImage size={10} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await navigator.clipboard.writeText(cloudSession.shareUrl);
+                          setLastCloudShareUrl(cloudSession.shareUrl);
+                          triggerAlert('Cloud link copied.', 'success');
+                        }}
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-cyan-300 hover:bg-cyan-950/15 transition"
+                        title="Copy cloud link"
+                      >
+                        <Copy size={10} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => removeCloudSession(cloudSession.id, e)}
+                        className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/15 transition"
+                        title="Delete cloud mix"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Import JSON Trigger */}
         <div className="flex justify-between items-center text-[9px] font-mono font-bold text-zinc-500 border-t border-zinc-850/60 pt-3">
           <span>MIX ARCHIVES CABINET</span>
@@ -1357,7 +1538,7 @@ export default function UserProfileAndSessionManager() {
                       <FileDown size={10} />
                     </button>
                     <button 
-                      onClick={(e) => deleteSession(session.id, e)}
+                      onClick={(e) => deleteLocalSession(session.id, e)}
                       className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/15 transition"
                       title="Scrub mix from index"
                     >

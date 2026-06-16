@@ -35,8 +35,8 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
   }
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') {
     res.sendStatus(204);
     return;
@@ -83,6 +83,27 @@ app.post('/api/sessions', asyncRoute(async (req: Request, res: Response) => {
   });
 }));
 
+app.get('/api/sessions', asyncRoute(async (req: Request, res: Response) => {
+  const user = await getAuthenticatedUser(req.headers.authorization);
+  if (!user) {
+    res.status(401).json({
+      error: 'Authentication required',
+    });
+    return;
+  }
+
+  const sessions = await sessionStorage.listSessions({ userId: user.id });
+  res.json({
+    sessions: sessions.map((stored) => ({
+      id: stored.id,
+      shareUrl: buildShareUrl(stored.id),
+      createdAt: stored.createdAt,
+      visibility: stored.visibility,
+      session: stored.session,
+    })),
+  });
+}));
+
 app.get('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
   const user = await getAuthenticatedUser(req.headers.authorization);
   const stored = await sessionStorage.getSession(req.params.id, {
@@ -101,6 +122,63 @@ app.get('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
     createdAt: stored.createdAt,
     visibility: stored.visibility,
     session: stored.session,
+  });
+}));
+
+app.put('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
+  const validationError = getSessionValidationError(req.body);
+  if (validationError) {
+    res.status(400).json({
+      error: 'Invalid session payload',
+      detail: validationError,
+    });
+    return;
+  }
+
+  const user = await getAuthenticatedUser(req.headers.authorization);
+  if (!user) {
+    res.status(401).json({
+      error: 'Authentication required',
+    });
+    return;
+  }
+
+  const stored = await sessionStorage.updateSession(req.params.id, req.body, { userId: user.id });
+  if (!stored) {
+    res.status(404).json({
+      error: 'Session not found',
+    });
+    return;
+  }
+
+  res.json({
+    id: stored.id,
+    shareUrl: buildShareUrl(stored.id),
+    createdAt: stored.createdAt,
+    visibility: stored.visibility,
+    session: stored.session,
+  });
+}));
+
+app.delete('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
+  const user = await getAuthenticatedUser(req.headers.authorization);
+  if (!user) {
+    res.status(401).json({
+      error: 'Authentication required',
+    });
+    return;
+  }
+
+  const deleted = await sessionStorage.deleteSession(req.params.id, { userId: user.id });
+  if (!deleted) {
+    res.status(404).json({
+      error: 'Session not found',
+    });
+    return;
+  }
+
+  res.json({
+    deleted: true,
   });
 }));
 

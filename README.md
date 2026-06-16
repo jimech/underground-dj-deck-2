@@ -138,7 +138,7 @@ The backend health check is available at `http://localhost:8787/api/health` and 
 The frontend API client uses `VITE_API_BASE_URL` when set, otherwise it defaults to `http://localhost:8787`. This value is browser-visible public configuration; never place secrets or API keys in `VITE_*` variables.
 
 #### Session API
-The local API includes development-only in-memory session sharing. These sessions reset whenever the server restarts; database persistence is planned as a later full-stack milestone.
+The local API includes development-only in-memory session sharing. These sessions reset whenever the server restarts unless Supabase persistence is enabled.
 
 The backend chooses its session storage through `SESSION_STORAGE_DRIVER`. The current supported local value is `memory`; the API routes call a storage interface so a database adapter can be enabled later without changing route behavior.
 
@@ -187,6 +187,12 @@ curl http://localhost:8787/api/sessions/abc123xyz
 Invalid session payloads return `400` with a validation detail. Unknown session IDs return `404`.
 
 When a user is signed in, the backend attaches their Supabase user ID to newly saved cloud sessions. Public cloud links remain loadable from `?sessionId=...`; private sessions are supported by the API with `POST /api/sessions?visibility=private` and require the owning signed-in user to load them.
+
+Signed-in users also get an account-scoped cloud library. These routes require an `Authorization: Bearer <supabase_access_token>` header:
+
+- `GET /api/sessions` lists sessions owned by the signed-in user.
+- `PUT /api/sessions/:id` renames/updates an owned session payload.
+- `DELETE /api/sessions/:id` deletes an owned session.
 
 #### Profile API
 The app also syncs an anonymous browser profile to the backend when available, while keeping localStorage as the immediate offline fallback.

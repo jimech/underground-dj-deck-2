@@ -35,6 +35,14 @@ export interface SessionResponse {
   session: VersionedSession;
 }
 
+export interface SessionListResponse {
+  sessions: SessionResponse[];
+}
+
+export interface DeleteSessionResponse {
+  deleted: true;
+}
+
 export interface ProfileResponse {
   profile: DjProfile;
 }
@@ -116,6 +124,23 @@ export function saveSession(session: VersionedSession): Promise<ApiResult<Sessio
 
 export function getSession(id: string): Promise<ApiResult<SessionResponse>> {
   return requestJson<SessionResponse>(`/api/sessions/${encodeURIComponent(id)}`);
+}
+
+export function listSessions(): Promise<ApiResult<SessionListResponse>> {
+  return requestJson<SessionListResponse>('/api/sessions');
+}
+
+export function updateSession(id: string, session: VersionedSession): Promise<ApiResult<SessionResponse>> {
+  return requestJson<SessionResponse>(`/api/sessions/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(session),
+  });
+}
+
+export function deleteSession(id: string): Promise<ApiResult<DeleteSessionResponse>> {
+  return requestJson<DeleteSessionResponse>(`/api/sessions/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
 }
 
 export function getProfile(id: string): Promise<ApiResult<ProfileResponse>> {

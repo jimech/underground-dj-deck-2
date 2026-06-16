@@ -12,6 +12,9 @@ export interface StoredSession {
 export interface SessionStorage {
   saveSession(session: VersionedSession, options?: { userId?: string; visibility?: 'public' | 'private' }): Promise<StoredSession>;
   getSession(id: string, options?: { userId?: string }): Promise<StoredSession | null>;
+  listSessions(options: { userId: string }): Promise<StoredSession[]>;
+  updateSession(id: string, session: VersionedSession, options: { userId: string }): Promise<StoredSession | null>;
+  deleteSession(id: string, options: { userId: string }): Promise<boolean>;
   saveProfile(id: string, profile: DjProfileInput, userId?: string): Promise<DjProfile>;
   getProfile(id: string): Promise<DjProfile | null>;
 }

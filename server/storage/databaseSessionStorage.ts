@@ -72,6 +72,53 @@ export class DatabaseSessionStorage implements SessionStorage {
     return this.mapRow(data);
   }
 
+  async listSessions(options: { userId: string }): Promise<StoredSession[]> {
+    const { data, error } = await this.supabase
+      .from('dj_sessions')
+      .select('id, user_id, visibility, session, created_at')
+      .eq('user_id', options.userId)
+      .order('created_at', { ascending: false })
+      .returns<SessionRow[]>();
+
+    if (error) {
+      throw new Error(`Failed to list Supabase sessions: ${error.message}`);
+    }
+
+    return (data || []).map((row) => this.mapRow(row));
+  }
+
+  async updateSession(id: string, session: VersionedSession, options: { userId: string }): Promise<StoredSession | null> {
+    const { data, error } = await this.supabase
+      .from('dj_sessions')
+      .update({ session: cloneSession(session) })
+      .eq('id', id)
+      .eq('user_id', options.userId)
+      .select('id, user_id, visibility, session, created_at')
+      .maybeSingle<SessionRow>();
+
+    if (error) {
+      throw new Error(`Failed to update Supabase session: ${error.message}`);
+    }
+
+    return data ? this.mapRow(data) : null;
+  }
+
+  async deleteSession(id: string, options: { userId: string }): Promise<boolean> {
+    const { data, error } = await this.supabase
+      .from('dj_sessions')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', options.userId)
+      .select('id')
+      .maybeSingle<{ id: string }>();
+
+    if (error) {
+      throw new Error(`Failed to delete Supabase session: ${error.message}`);
+    }
+
+    return Boolean(data);
+  }
+
   async saveProfile(id: string, profile: DjProfileInput, userId?: string): Promise<DjProfile> {
     const { data, error } = await this.supabase
       .from('dj_profiles')

@@ -132,7 +132,13 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 **Dependencies:** APP-003.
 
-**Status:** Ready.
+**Status:** Done.
+
+**Completed:**
+- Added authenticated list, update, and delete endpoints for user-owned cloud sessions.
+- Added a signed-in cloud session library in the session cabinet.
+- Added cloud load, rename, copy link, poster, refresh, and delete actions.
+- Kept the local offline archive separate from cloud sessions.
 
 ---
 

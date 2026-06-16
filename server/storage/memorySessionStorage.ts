@@ -36,6 +36,32 @@ export class MemorySessionStorage implements SessionStorage {
     return this.cloneStoredSession(stored);
   }
 
+  async listSessions(options: { userId: string }): Promise<StoredSession[]> {
+    return Array.from(this.sessions.values())
+      .filter((stored) => stored.userId === options.userId)
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+      .map((stored) => this.cloneStoredSession(stored));
+  }
+
+  async updateSession(id: string, session: VersionedSession, options: { userId: string }): Promise<StoredSession | null> {
+    const stored = this.sessions.get(id);
+    if (!stored || stored.userId !== options.userId) return null;
+
+    const updated: StoredSession = {
+      ...stored,
+      session: cloneSession(session),
+    };
+    this.sessions.set(id, updated);
+    return this.cloneStoredSession(updated);
+  }
+
+  async deleteSession(id: string, options: { userId: string }): Promise<boolean> {
+    const stored = this.sessions.get(id);
+    if (!stored || stored.userId !== options.userId) return false;
+
+    return this.sessions.delete(id);
+  }
+
   async saveProfile(id: string, profile: DjProfileInput, userId?: string): Promise<DjProfile> {
     const stored: DjProfile = {
       id,
