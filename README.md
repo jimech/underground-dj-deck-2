@@ -146,7 +146,9 @@ The backend chooses its session storage through `SESSION_STORAGE_DRIVER`. The cu
 To persist cloud sessions beyond server restarts:
 
 1. Create a Supabase project.
-2. In the Supabase SQL editor, run `supabase/migrations/202606160001_create_dj_sessions.sql`.
+2. In the Supabase SQL editor, run these migrations in order:
+   - `supabase/migrations/202606160001_create_dj_sessions.sql`
+   - `supabase/migrations/202606160002_create_dj_profiles.sql`
 3. Create a local `.env` file, never committed to git:
 
 ```bash
@@ -181,6 +183,44 @@ curl http://localhost:8787/api/sessions/abc123xyz
 ```
 
 Invalid session payloads return `400` with a validation detail. Unknown session IDs return `404`.
+
+#### Profile API
+The app also syncs an anonymous browser profile to the backend when available, while keeping localStorage as the immediate offline fallback.
+
+```bash
+# Save/update an anonymous DJ profile
+curl -X PUT http://localhost:8787/api/profiles/profile_abc \
+  -H "Content-Type: application/json" \
+  -d '{
+    "djName": "DJ Monolith",
+    "djCrew": "Sub-level 4",
+    "soundStyle": "Industrial Techno",
+    "avatarIndex": 0,
+    "timeMixed": 0,
+    "vinylSpins": 0
+  }'
+
+# Load an anonymous DJ profile
+curl http://localhost:8787/api/profiles/profile_abc
+```
+
+Invalid profile payloads return `400`. Unknown profile IDs return `404`.
+
+#### AI Session Naming
+The backend can generate session names from BPM, style, ambient mode, and sequencer density:
+
+```bash
+curl -X POST http://localhost:8787/api/ai/session-name \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bpm": 130,
+    "soundStyle": "Industrial Techno",
+    "ambientMode": "subway",
+    "sequencerDensity": 0.25
+  }'
+```
+
+Set `GEMINI_API_KEY` only in local `.env` or deployment secrets. The key is read by the Express server and must never be placed in `VITE_*` variables or frontend code. If the key is missing or the AI call fails, the endpoint returns a local fallback response so the UI remains usable.
 
 ### 3. Production Build
 ```bash

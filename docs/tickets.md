@@ -196,7 +196,7 @@ This backlog turns the current browser-only Web Audio app into a full-stack prod
 
 **Dependencies:** TICKET-008.
 
-**Status:** Ready.
+**Status:** Done.
 
 ---
 
@@ -219,7 +219,7 @@ This backlog turns the current browser-only Web Audio app into a full-stack prod
 
 **Dependencies:** TICKET-001.
 
-**Status:** Ready.
+**Status:** Done.
 
 ---
 

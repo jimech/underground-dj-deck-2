@@ -1,5 +1,8 @@
 import 'dotenv/config';
 import express, { type NextFunction, type Request, type Response } from 'express';
+import { generateSessionNames } from './aiSessionNaming';
+import { getProfileValidationError } from '../shared/profileSchema';
+import { getSessionNameRequestError } from '../shared/aiSessionNameSchema';
 import { getSessionValidationError } from '../shared/sessionSchema';
 import { sessionStorage } from './storage';
 
@@ -79,6 +82,50 @@ app.get('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
     createdAt: stored.createdAt,
     session: stored.session,
   });
+}));
+
+app.put('/api/profiles/:id', asyncRoute(async (req: Request, res: Response) => {
+  const validationError = getProfileValidationError(req.body);
+  if (validationError) {
+    res.status(400).json({
+      error: 'Invalid profile payload',
+      detail: validationError,
+    });
+    return;
+  }
+
+  const profile = await sessionStorage.saveProfile(req.params.id, req.body);
+  res.json({
+    profile,
+  });
+}));
+
+app.get('/api/profiles/:id', asyncRoute(async (req: Request, res: Response) => {
+  const profile = await sessionStorage.getProfile(req.params.id);
+  if (!profile) {
+    res.status(404).json({
+      error: 'Profile not found',
+    });
+    return;
+  }
+
+  res.json({
+    profile,
+  });
+}));
+
+app.post('/api/ai/session-name', asyncRoute(async (req: Request, res: Response) => {
+  const validationError = getSessionNameRequestError(req.body);
+  if (validationError) {
+    res.status(400).json({
+      error: 'Invalid session naming payload',
+      detail: validationError,
+    });
+    return;
+  }
+
+  const result = await generateSessionNames(req.body);
+  res.json(result);
 }));
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

@@ -1,9 +1,11 @@
 import { randomBytes } from 'node:crypto';
-import { cloneSession, type SessionStorage, type StoredSession } from './sessionStorage';
+import { cloneProfile, cloneSession, type SessionStorage, type StoredSession } from './sessionStorage';
+import type { DjProfile, DjProfileInput } from '../../shared/profileSchema';
 import type { VersionedSession } from '../../shared/sessionSchema';
 
 export class MemorySessionStorage implements SessionStorage {
   private readonly sessions = new Map<string, StoredSession>();
+  private readonly profiles = new Map<string, DjProfile>();
 
   async saveSession(session: VersionedSession): Promise<StoredSession> {
     let id = this.createSessionId();
@@ -26,6 +28,21 @@ export class MemorySessionStorage implements SessionStorage {
     if (!stored) return null;
 
     return this.cloneStoredSession(stored);
+  }
+
+  async saveProfile(id: string, profile: DjProfileInput): Promise<DjProfile> {
+    const stored: DjProfile = {
+      id,
+      ...profile,
+    };
+
+    this.profiles.set(id, stored);
+    return cloneProfile(stored);
+  }
+
+  async getProfile(id: string): Promise<DjProfile | null> {
+    const stored = this.profiles.get(id);
+    return stored ? cloneProfile(stored) : null;
   }
 
   private createSessionId(): string {

@@ -1,4 +1,6 @@
 import type { VersionedSession } from '../../shared/sessionSchema';
+import type { DjProfile, DjProfileInput } from '../../shared/profileSchema';
+import type { SessionNameRequest, SessionNameResponse } from '../../shared/aiSessionNameSchema';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8787';
 
@@ -28,6 +30,10 @@ export interface SessionResponse {
   shareUrl: string;
   createdAt: string;
   session: VersionedSession;
+}
+
+export interface ProfileResponse {
+  profile: DjProfile;
 }
 
 async function parseJsonResponse(response: Response): Promise<unknown> {
@@ -98,4 +104,22 @@ export function saveSession(session: VersionedSession): Promise<ApiResult<Sessio
 
 export function getSession(id: string): Promise<ApiResult<SessionResponse>> {
   return requestJson<SessionResponse>(`/api/sessions/${encodeURIComponent(id)}`);
+}
+
+export function getProfile(id: string): Promise<ApiResult<ProfileResponse>> {
+  return requestJson<ProfileResponse>(`/api/profiles/${encodeURIComponent(id)}`);
+}
+
+export function saveProfile(id: string, profile: DjProfileInput): Promise<ApiResult<ProfileResponse>> {
+  return requestJson<ProfileResponse>(`/api/profiles/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(profile),
+  });
+}
+
+export function generateSessionNames(input: SessionNameRequest): Promise<ApiResult<SessionNameResponse>> {
+  return requestJson<SessionNameResponse>('/api/ai/session-name', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }

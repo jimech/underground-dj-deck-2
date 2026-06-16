@@ -8,7 +8,24 @@ import {
   Shield, RefreshCw, Share2, Copy, ExternalLink, Code, FileImage
 } from 'lucide-react';
 import { serializeSession, deserializeSession, type VersionedSession } from '../utils/sessionCodec';
-import { getSession as getCloudSession, saveSession as saveCloudSession } from '../lib/apiClient';
+import {
+  generateSessionNames,
+  getProfile as getCloudProfile,
+  getSession as getCloudSession,
+  saveProfile as saveCloudProfile,
+  saveSession as saveCloudSession,
+} from '../lib/apiClient';
+
+const PROFILE_ID_STORAGE_KEY = 'dj_profile_id';
+
+function getOrCreateProfileId() {
+  const existing = localStorage.getItem(PROFILE_ID_STORAGE_KEY);
+  if (existing) return existing;
+
+  const generated = `profile_${crypto.randomUUID()}`;
+  localStorage.setItem(PROFILE_ID_STORAGE_KEY, generated);
+  return generated;
+}
 
 export default function UserProfileAndSessionManager() {
   // --- DJ Profile States ---
@@ -20,6 +37,8 @@ export default function UserProfileAndSessionManager() {
   const [timeMixed, setTimeMixed] = useState(0); // in seconds
   const [vinylSpins, setVinylSpins] = useState(0);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileId, setProfileId] = useState('');
+  const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
 
   // Avatar seed / design accent index
   const [avatarIndex, setAvatarIndex] = useState(0);
@@ -48,9 +67,13 @@ export default function UserProfileAndSessionManager() {
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [isCloudSaving, setIsCloudSaving] = useState(false);
   const [lastCloudShareUrl, setLastCloudShareUrl] = useState('');
+  const [isGeneratingSessionName, setIsGeneratingSessionName] = useState(false);
 
   // Load initial settings and profile stats on mount
   useEffect(() => {
+    const activeProfileId = getOrCreateProfileId();
+    setProfileId(activeProfileId);
+
     // 1. DJ Profile
     const localName = localStorage.getItem('dj_profile_name');
     const localCrew = localStorage.getItem('dj_profile_crew');
@@ -65,6 +88,35 @@ export default function UserProfileAndSessionManager() {
     if (localTime) setTimeMixed(parseInt(localTime));
     if (localSpins) setVinylSpins(parseInt(localSpins));
     if (localAvatar) setAvatarIndex(parseInt(localAvatar));
+
+    const loadCloudProfile = async () => {
+      const result = await getCloudProfile(activeProfileId);
+      if (result.ok === false) {
+        if (result.status && result.status !== 404) {
+          triggerAlert('Cloud profile unavailable. Using local profile.', 'info');
+        }
+        setHasLoadedProfile(true);
+        return;
+      }
+
+      const profile = result.data.profile;
+      setDjName(profile.djName);
+      setDjCrew(profile.djCrew);
+      setSoundStyle(profile.soundStyle);
+      setAvatarIndex(profile.avatarIndex);
+      setTimeMixed(profile.timeMixed);
+      setVinylSpins(profile.vinylSpins);
+
+      localStorage.setItem('dj_profile_name', profile.djName);
+      localStorage.setItem('dj_profile_crew', profile.djCrew);
+      localStorage.setItem('dj_profile_style', profile.soundStyle);
+      localStorage.setItem('dj_profile_avatar', profile.avatarIndex.toString());
+      localStorage.setItem('dj_profile_time_mixed', profile.timeMixed.toString());
+      localStorage.setItem('dj_profile_spins', profile.vinylSpins.toString());
+      setHasLoadedProfile(true);
+    };
+
+    loadCloudProfile();
 
     // 2. Custom tracks synced from audio engine on startup
     setUploadedTracks([...audio.uploadedTracks]);
@@ -103,13 +155,50 @@ export default function UserProfileAndSessionManager() {
     return () => clearInterval(interval);
   }, []);
 
-  const saveProfile = () => {
+  useEffect(() => {
+    if (!profileId || !hasLoadedProfile) return;
+
+    const timeout = setTimeout(() => {
+      saveCloudProfile(profileId, {
+        djName,
+        djCrew,
+        soundStyle,
+        avatarIndex,
+        timeMixed,
+        vinylSpins,
+      });
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [profileId, hasLoadedProfile, djName, djCrew, soundStyle, avatarIndex, timeMixed, vinylSpins]);
+
+  const saveProfile = async () => {
     localStorage.setItem('dj_profile_name', djName);
     localStorage.setItem('dj_profile_crew', djCrew);
     localStorage.setItem('dj_profile_style', soundStyle);
     localStorage.setItem('dj_profile_avatar', avatarIndex.toString());
     setIsEditingProfile(false);
-    triggerAlert('DJ Profile customized successfully', 'success');
+
+    if (!profileId) {
+      triggerAlert('DJ Profile customized locally.', 'success');
+      return;
+    }
+
+    const result = await saveCloudProfile(profileId, {
+      djName,
+      djCrew,
+      soundStyle,
+      avatarIndex,
+      timeMixed,
+      vinylSpins,
+    });
+
+    if (result.ok === false) {
+      triggerAlert('Profile saved locally. Cloud profile unavailable.', 'info');
+      return;
+    }
+
+    triggerAlert('DJ Profile customized and synced.', 'success');
   };
 
   const triggerAlert = (text: string, type: 'info' | 'success' | 'error') => {
@@ -252,6 +341,44 @@ export default function UserProfileAndSessionManager() {
     localStorage.setItem('dj_saved_sessions', JSON.stringify(nextSessions));
     setSessionName('');
     triggerAlert(`"${nameToSave}" successfully locked to browser safe.`, 'success');
+  };
+
+  const getSequencerDensity = () => {
+    const tracks = Object.values(audio.sequencerTracks);
+    const totalSteps = tracks.reduce((sum, track) => sum + track.length, 0);
+    if (totalSteps === 0) return 0;
+
+    const activeSteps = tracks.reduce((sum, track) => sum + track.filter(Boolean).length, 0);
+    return activeSteps / totalSteps;
+  };
+
+  const generateAiSessionName = async () => {
+    if (isGeneratingSessionName) return;
+
+    setIsGeneratingSessionName(true);
+    try {
+      const result = await generateSessionNames({
+        bpm: audio.bpm,
+        soundStyle,
+        ambientMode: audio.ambientMode,
+        sequencerDensity: getSequencerDensity(),
+      });
+
+      if (result.ok === false) {
+        setSessionName(`Bunker Signal ${audio.bpm}`);
+        triggerAlert('AI naming unavailable. Local fallback name loaded.', 'info');
+        return;
+      }
+
+      const [primaryName] = result.data.names;
+      setSessionName(primaryName || `Bunker Signal ${audio.bpm}`);
+      triggerAlert(result.data.description, 'success');
+    } catch {
+      setSessionName(`Bunker Signal ${audio.bpm}`);
+      triggerAlert('AI naming unavailable. Local fallback name loaded.', 'info');
+    } finally {
+      setIsGeneratingSessionName(false);
+    }
   };
 
   const exportCurrentRigWithoutSaving = () => {
@@ -849,6 +976,15 @@ export default function UserProfileAndSessionManager() {
             className="flex-1 bg-zinc-950 text-white font-mono text-[10px] font-bold uppercase rounded-xl border border-zinc-850 py-2 px-3 focus:border-orange-500 outline-none"
             placeholder="NAME CURRENT MIX..."
           />
+          <button
+            type="button"
+            onClick={generateAiSessionName}
+            disabled={isGeneratingSessionName}
+            className="px-3.5 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/40 hover:bg-cyan-400 hover:text-black transition duration-150 text-cyan-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-wait"
+            title="Generate a session name from BPM, style, ambient mode, and sequencer density"
+          >
+            <Sparkles size={12} strokeWidth={2.5} className={isGeneratingSessionName ? 'animate-pulse' : ''} />
+          </button>
           <button 
             type="submit"
             className="px-3.5 py-2 rounded-xl bg-orange-500/10 border border-orange-500/40 hover:bg-orange-500 hover:text-black transition duration-150 text-orange-400 flex items-center justify-center"
