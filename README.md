@@ -222,6 +222,22 @@ curl -X POST http://localhost:8787/api/ai/session-name \
 
 Set `GEMINI_API_KEY` only in local `.env` or deployment secrets. The key is read by the Express server and must never be placed in `VITE_*` variables or frontend code. If the key is missing or the AI call fails, the endpoint returns a local fallback response so the UI remains usable.
 
+The poster generator also uses the server-side AI path for flyer copy:
+
+```bash
+curl -X POST http://localhost:8787/api/ai/flyer-copy \
+  -H "Content-Type: application/json" \
+  -d '{
+    "djName": "DJ Monolith",
+    "djCrew": "Bunker Collective",
+    "soundStyle": "Industrial Techno",
+    "sessionName": "Live Setup Improv",
+    "bpm": 130,
+    "ambientMode": "subway",
+    "aspectRatio": "1:1"
+  }'
+```
+
 ### 3. Production Build
 ```bash
 # Compile and bundle code to optimized static files

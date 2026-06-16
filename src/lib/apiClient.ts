@@ -1,6 +1,7 @@
 import type { VersionedSession } from '../../shared/sessionSchema';
 import type { DjProfile, DjProfileInput } from '../../shared/profileSchema';
 import type { SessionNameRequest, SessionNameResponse } from '../../shared/aiSessionNameSchema';
+import type { FlyerCopyRequest, FlyerCopyResponse } from '../../shared/aiFlyerCopySchema';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8787';
 
@@ -119,6 +120,13 @@ export function saveProfile(id: string, profile: DjProfileInput): Promise<ApiRes
 
 export function generateSessionNames(input: SessionNameRequest): Promise<ApiResult<SessionNameResponse>> {
   return requestJson<SessionNameResponse>('/api/ai/session-name', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function generateFlyerCopy(input: FlyerCopyRequest): Promise<ApiResult<FlyerCopyResponse>> {
+  return requestJson<FlyerCopyResponse>('/api/ai/flyer-copy', {
     method: 'POST',
     body: JSON.stringify(input),
   });

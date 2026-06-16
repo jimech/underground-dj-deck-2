@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express, { type NextFunction, type Request, type Response } from 'express';
+import { generateFlyerCopy } from './aiFlyerCopy';
 import { generateSessionNames } from './aiSessionNaming';
+import { getFlyerCopyRequestError } from '../shared/aiFlyerCopySchema';
 import { getProfileValidationError } from '../shared/profileSchema';
 import { getSessionNameRequestError } from '../shared/aiSessionNameSchema';
 import { getSessionValidationError } from '../shared/sessionSchema';
@@ -125,6 +127,20 @@ app.post('/api/ai/session-name', asyncRoute(async (req: Request, res: Response) 
   }
 
   const result = await generateSessionNames(req.body);
+  res.json(result);
+}));
+
+app.post('/api/ai/flyer-copy', asyncRoute(async (req: Request, res: Response) => {
+  const validationError = getFlyerCopyRequestError(req.body);
+  if (validationError) {
+    res.status(400).json({
+      error: 'Invalid flyer copy payload',
+      detail: validationError,
+    });
+    return;
+  }
+
+  const result = await generateFlyerCopy(req.body);
   res.json(result);
 }));
 

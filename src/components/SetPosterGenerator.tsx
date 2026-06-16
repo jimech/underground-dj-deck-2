@@ -5,6 +5,7 @@ import {
   X, Download, RefreshCw, Image as ImageIcon, Sparkles, 
   User, Music, Type, Flame, Heart, FileImage, Layers
 } from 'lucide-react';
+import { generateFlyerCopy } from '../lib/apiClient';
 
 interface SetPosterGeneratorProps {
   onClose: () => void;
@@ -22,7 +23,9 @@ export default function SetPosterGenerator({ onClose, defaultSessionName, defaul
   const [ambientMode, setAmbientMode] = useState('none');
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '9:16'>('1:1');
   const [isRendering, setIsRendering] = useState(false);
+  const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
   const [posterUrl, setPosterUrl] = useState<string | null>(null);
+  const [socialCaption, setSocialCaption] = useState('');
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -95,6 +98,37 @@ export default function SetPosterGenerator({ onClose, defaultSessionName, defaul
     document.body.removeChild(downloadLink);
   };
 
+  const handleGenerateCopy = async () => {
+    if (isGeneratingCopy) return;
+
+    setIsGeneratingCopy(true);
+    try {
+      const result = await generateFlyerCopy({
+        djName,
+        djCrew,
+        soundStyle,
+        sessionName,
+        bpm: Number(bpm) || 130,
+        ambientMode,
+        aspectRatio,
+      });
+
+      if (result.ok === false) {
+        setSocialCaption('AI copy unavailable. Poster fields remain editable and export-ready.');
+        return;
+      }
+
+      setSessionName(result.data.eventTitle);
+      setSoundStyle(result.data.soundSignature);
+      setDjCrew(result.data.tagline);
+      setSocialCaption(result.data.socialCaption);
+    } catch {
+      setSocialCaption('AI copy unavailable. Poster fields remain editable and export-ready.');
+    } finally {
+      setIsGeneratingCopy(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/90 backdrop-blur-md flex items-center justify-center p-4">
       <div 
@@ -123,6 +157,37 @@ export default function SetPosterGenerator({ onClose, defaultSessionName, defaul
             <p className="text-xs text-zinc-400 font-mono leading-relaxed">
               Export high-fidelity, customized club flyers of your session. Perfect for sharing the underground vibe across social networks.
             </p>
+
+            <button
+              type="button"
+              onClick={handleGenerateCopy}
+              disabled={isGeneratingCopy}
+              className="w-full py-2.5 bg-cyan-500/10 hover:bg-cyan-400 hover:text-black text-cyan-300 border border-cyan-500/30 font-semibold rounded-2xl text-[10px] font-mono uppercase tracking-widest transition duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+              title="Generate poster title, sound signature, tagline, and social caption"
+            >
+              <Sparkles size={14} className={isGeneratingCopy ? 'animate-pulse' : ''} />
+              <span>{isGeneratingCopy ? 'Generating Copy...' : 'Generate AI Flyer Copy'}</span>
+            </button>
+
+            {socialCaption && (
+              <div className="bg-zinc-950/50 border border-zinc-800 rounded-2xl p-3 flex flex-col gap-2">
+                <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-widest font-extrabold">
+                  Social Caption
+                </span>
+                <p className="text-[10px] text-zinc-300 font-mono leading-relaxed">
+                  {socialCaption}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(socialCaption);
+                  }}
+                  className="self-start px-2.5 py-1.5 rounded-lg border border-zinc-800 text-[8px] font-mono uppercase font-extrabold text-zinc-400 hover:text-cyan-300 hover:border-cyan-700/70 transition"
+                >
+                  Copy Caption
+                </button>
+              </div>
+            )}
 
             {/* Fields Config Form */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2 font-mono text-xs">
