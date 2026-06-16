@@ -243,6 +243,15 @@ curl -X POST http://localhost:8787/api/ai/flyer-copy \
 # Compile and bundle code to optimized static files
 npm run build
 ```
+
+### 4. Quality Checks
+```bash
+# Type-check the project
+npm run lint
+
+# Run automated tests
+npm test
+```
 Porting the app to a portfolio? Since it relies purely on client-side Web Audio synthesis, the compiled output in `./dist` can be hosted **entirely for free** on services such as **GitHub Pages**, **Vercel**, **Netlify**, or **Cloud Run** with zero database setup, zero server cold starts, and absolute responsiveness!
 
 ---
