@@ -1,7 +1,7 @@
 import 'dotenv/config';
-import express, { type Request, type Response } from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import { getSessionValidationError } from '../shared/sessionSchema';
-import { getSession, saveSession } from './sessionStore';
+import { sessionStorage } from './storage';
 
 const app = express();
 const port = Number(process.env.PORT || process.env.API_PORT || 8787);
@@ -9,6 +9,12 @@ const frontendUrl = process.env.APP_URL || 'http://localhost:3000';
 
 function buildShareUrl(id: string): string {
   return `${frontendUrl.replace(/\/$/, '')}/?sessionId=${encodeURIComponent(id)}`;
+}
+
+function asyncRoute(handler: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    handler(req, res, next).catch(next);
+  };
 }
 
 app.use(express.json({ limit: '1mb' }));
@@ -39,7 +45,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
-app.post('/api/sessions', (req: Request, res: Response) => {
+app.post('/api/sessions', asyncRoute(async (req: Request, res: Response) => {
   const validationError = getSessionValidationError(req.body);
   if (validationError) {
     res.status(400).json({
@@ -49,17 +55,17 @@ app.post('/api/sessions', (req: Request, res: Response) => {
     return;
   }
 
-  const stored = saveSession(req.body);
+  const stored = await sessionStorage.saveSession(req.body);
   res.status(201).json({
     id: stored.id,
     shareUrl: buildShareUrl(stored.id),
     createdAt: stored.createdAt,
     session: stored.session,
   });
-});
+}));
 
-app.get('/api/sessions/:id', (req: Request, res: Response) => {
-  const stored = getSession(req.params.id);
+app.get('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
+  const stored = await sessionStorage.getSession(req.params.id);
   if (!stored) {
     res.status(404).json({
       error: 'Session not found',
@@ -72,6 +78,13 @@ app.get('/api/sessions/:id', (req: Request, res: Response) => {
     shareUrl: buildShareUrl(stored.id),
     createdAt: stored.createdAt,
     session: stored.session,
+  });
+}));
+
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err);
+  res.status(500).json({
+    error: 'Internal server error',
   });
 });
 

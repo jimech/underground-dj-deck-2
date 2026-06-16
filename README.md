@@ -140,6 +140,23 @@ The frontend API client uses `VITE_API_BASE_URL` when set, otherwise it defaults
 #### Session API
 The local API includes development-only in-memory session sharing. These sessions reset whenever the server restarts; database persistence is planned as a later full-stack milestone.
 
+The backend chooses its session storage through `SESSION_STORAGE_DRIVER`. The current supported local value is `memory`; the API routes call a storage interface so a database adapter can be enabled later without changing route behavior.
+
+#### Supabase Persistence
+To persist cloud sessions beyond server restarts:
+
+1. Create a Supabase project.
+2. In the Supabase SQL editor, run `supabase/migrations/202606160001_create_dj_sessions.sql`.
+3. Create a local `.env` file, never committed to git:
+
+```bash
+SESSION_STORAGE_DRIVER="supabase"
+SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVER_ONLY_SERVICE_ROLE_KEY"
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` is server-only and must never be placed in `VITE_*` variables or frontend code. If Supabase credentials are missing, the server falls back to in-memory storage for local development.
+
 ```bash
 # Save a full VersionedSession JSON payload
 curl -X POST http://localhost:8787/api/sessions \
