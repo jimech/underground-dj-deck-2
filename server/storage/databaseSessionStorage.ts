@@ -5,12 +5,15 @@ import { cloneSession, type SessionStorage, type StoredSession } from './session
 
 interface SessionRow {
   id: string;
+  user_id: string | null;
+  visibility: 'public' | 'private';
   session: VersionedSession;
   created_at: string;
 }
 
 interface ProfileRow {
   id: string;
+  user_id: string | null;
   dj_name: string;
   dj_crew: string;
   sound_style: string;
@@ -31,13 +34,18 @@ export class DatabaseSessionStorage implements SessionStorage {
     });
   }
 
-  async saveSession(session: VersionedSession): Promise<StoredSession> {
+  async saveSession(
+    session: VersionedSession,
+    options: { userId?: string; visibility?: 'public' | 'private' } = {},
+  ): Promise<StoredSession> {
     const { data, error } = await this.supabase
       .from('dj_sessions')
       .insert({
+        user_id: options.userId || null,
+        visibility: options.visibility || 'public',
         session: cloneSession(session),
       })
-      .select('id, session, created_at')
+      .select('id, user_id, visibility, session, created_at')
       .single<SessionRow>();
 
     if (error) {
@@ -47,10 +55,10 @@ export class DatabaseSessionStorage implements SessionStorage {
     return this.mapRow(data);
   }
 
-  async getSession(id: string): Promise<StoredSession | null> {
+  async getSession(id: string, options: { userId?: string } = {}): Promise<StoredSession | null> {
     const { data, error } = await this.supabase
       .from('dj_sessions')
-      .select('id, session, created_at')
+      .select('id, user_id, visibility, session, created_at')
       .eq('id', id)
       .maybeSingle<SessionRow>();
 
@@ -58,14 +66,18 @@ export class DatabaseSessionStorage implements SessionStorage {
       throw new Error(`Failed to load Supabase session: ${error.message}`);
     }
 
-    return data ? this.mapRow(data) : null;
+    if (!data) return null;
+    if (data.visibility === 'private' && data.user_id !== options.userId) return null;
+
+    return this.mapRow(data);
   }
 
-  async saveProfile(id: string, profile: DjProfileInput): Promise<DjProfile> {
+  async saveProfile(id: string, profile: DjProfileInput, userId?: string): Promise<DjProfile> {
     const { data, error } = await this.supabase
       .from('dj_profiles')
       .upsert({
         id,
+        user_id: userId || null,
         dj_name: profile.djName,
         dj_crew: profile.djCrew,
         sound_style: profile.soundStyle,
@@ -74,7 +86,7 @@ export class DatabaseSessionStorage implements SessionStorage {
         vinyl_spins: profile.vinylSpins,
         updated_at: new Date().toISOString(),
       })
-      .select('id, dj_name, dj_crew, sound_style, avatar_index, time_mixed, vinyl_spins')
+      .select('id, user_id, dj_name, dj_crew, sound_style, avatar_index, time_mixed, vinyl_spins')
       .single<ProfileRow>();
 
     if (error) {
@@ -87,7 +99,7 @@ export class DatabaseSessionStorage implements SessionStorage {
   async getProfile(id: string): Promise<DjProfile | null> {
     const { data, error } = await this.supabase
       .from('dj_profiles')
-      .select('id, dj_name, dj_crew, sound_style, avatar_index, time_mixed, vinyl_spins')
+      .select('id, user_id, dj_name, dj_crew, sound_style, avatar_index, time_mixed, vinyl_spins')
       .eq('id', id)
       .maybeSingle<ProfileRow>();
 
@@ -103,12 +115,15 @@ export class DatabaseSessionStorage implements SessionStorage {
       id: row.id,
       session: cloneSession(row.session),
       createdAt: row.created_at,
+      ...(row.user_id ? { userId: row.user_id } : {}),
+      visibility: row.visibility,
     };
   }
 
   private mapProfileRow(row: ProfileRow): DjProfile {
     return {
       id: row.id,
+      ...(row.user_id ? { userId: row.user_id } : {}),
       djName: row.dj_name,
       djCrew: row.dj_crew,
       soundStyle: row.sound_style,

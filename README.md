@@ -149,6 +149,8 @@ To persist cloud sessions beyond server restarts:
 2. In the Supabase SQL editor, run these migrations in order:
    - `supabase/migrations/202606160001_create_dj_sessions.sql`
    - `supabase/migrations/202606160002_create_dj_profiles.sql`
+   - `supabase/migrations/202606160003_add_user_id_to_dj_profiles.sql`
+   - `supabase/migrations/202606160004_add_ownership_to_dj_sessions.sql`
 3. Create a local `.env` file, never committed to git:
 
 ```bash
@@ -184,8 +186,12 @@ curl http://localhost:8787/api/sessions/abc123xyz
 
 Invalid session payloads return `400` with a validation detail. Unknown session IDs return `404`.
 
+When a user is signed in, the backend attaches their Supabase user ID to newly saved cloud sessions. Public cloud links remain loadable from `?sessionId=...`; private sessions are supported by the API with `POST /api/sessions?visibility=private` and require the owning signed-in user to load them.
+
 #### Profile API
 The app also syncs an anonymous browser profile to the backend when available, while keeping localStorage as the immediate offline fallback.
+
+When a Supabase auth session is present, the frontend sends the user's access token to the API. The backend verifies that token and stores the profile under the authenticated Supabase user ID. Signed-out users keep using the anonymous browser profile ID.
 
 ```bash
 # Save/update an anonymous DJ profile
@@ -286,9 +292,11 @@ Required frontend environment variable:
 
 ```bash
 VITE_API_BASE_URL="https://YOUR_API_HOST"
+VITE_SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
+VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY"
 ```
 
-This value is public browser config. Never put secrets in `VITE_*` variables.
+These values are public browser config. Never put secrets in `VITE_*` variables.
 
 Required backend environment variables:
 
@@ -306,6 +314,12 @@ Backend secret rules:
 - Never commit `.env`.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` or `GEMINI_API_KEY` in frontend code.
 - Never prefix backend secrets with `VITE_`.
+
+Auth setup:
+
+- In Supabase, enable email magic link or OTP sign-in under Authentication settings.
+- Add your local and production frontend URLs to Supabase Auth redirect URLs.
+- Use the publishable/anon key for `VITE_SUPABASE_ANON_KEY`; never use the service-role key in frontend config.
 
 Before enabling Supabase persistence, run these SQL files in the Supabase SQL Editor:
 

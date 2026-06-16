@@ -2,6 +2,7 @@ import type { VersionedSession } from '../../shared/sessionSchema';
 import type { DjProfile, DjProfileInput } from '../../shared/profileSchema';
 import type { SessionNameRequest, SessionNameResponse } from '../../shared/aiSessionNameSchema';
 import type { FlyerCopyRequest, FlyerCopyResponse } from '../../shared/aiFlyerCopySchema';
+import { supabaseBrowserClient } from './supabaseClient';
 
 const DEFAULT_API_BASE_URL = 'http://localhost:8787';
 
@@ -30,6 +31,7 @@ export interface SessionResponse {
   id: string;
   shareUrl: string;
   createdAt: string;
+  visibility: 'public' | 'private';
   session: VersionedSession;
 }
 
@@ -62,10 +64,12 @@ function getApiError(payload: unknown, fallback: string): Pick<ApiFailure, 'erro
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {
   try {
+    const token = await getAuthToken();
     const response = await fetch(`${apiBaseUrl}${path}`, {
       ...init,
       headers: {
         ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...init?.headers,
       },
     });
@@ -90,6 +94,13 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<ApiResu
       detail: err instanceof Error ? err.message : undefined,
     };
   }
+}
+
+async function getAuthToken(): Promise<string | null> {
+  if (!supabaseBrowserClient) return null;
+
+  const { data } = await supabaseBrowserClient.auth.getSession();
+  return data.session?.access_token || null;
 }
 
 export function healthCheck(): Promise<ApiResult<HealthResponse>> {

@@ -5,12 +5,14 @@ export interface StoredSession {
   id: string;
   session: VersionedSession;
   createdAt: string;
+  userId?: string;
+  visibility: 'public' | 'private';
 }
 
 export interface SessionStorage {
-  saveSession(session: VersionedSession): Promise<StoredSession>;
-  getSession(id: string): Promise<StoredSession | null>;
-  saveProfile(id: string, profile: DjProfileInput): Promise<DjProfile>;
+  saveSession(session: VersionedSession, options?: { userId?: string; visibility?: 'public' | 'private' }): Promise<StoredSession>;
+  getSession(id: string, options?: { userId?: string }): Promise<StoredSession | null>;
+  saveProfile(id: string, profile: DjProfileInput, userId?: string): Promise<DjProfile>;
   getProfile(id: string): Promise<DjProfile | null>;
 }
 

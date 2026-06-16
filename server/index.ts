@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { type NextFunction, type Request, type Response } from 'express';
+import { getAuthenticatedUser, getUserProfileId } from './auth';
 import { generateFlyerCopy } from './aiFlyerCopy';
 import { generateSessionNames } from './aiSessionNaming';
 import { getFlyerCopyRequestError } from '../shared/aiFlyerCopySchema';
@@ -60,17 +61,33 @@ app.post('/api/sessions', asyncRoute(async (req: Request, res: Response) => {
     return;
   }
 
-  const stored = await sessionStorage.saveSession(req.body);
+  const user = await getAuthenticatedUser(req.headers.authorization);
+  const requestedVisibility = req.query.visibility === 'private' ? 'private' : 'public';
+  if (requestedVisibility === 'private' && !user) {
+    res.status(401).json({
+      error: 'Authentication required',
+    });
+    return;
+  }
+
+  const stored = await sessionStorage.saveSession(req.body, {
+    ...(user ? { userId: user.id } : {}),
+    visibility: requestedVisibility,
+  });
   res.status(201).json({
     id: stored.id,
     shareUrl: buildShareUrl(stored.id),
     createdAt: stored.createdAt,
+    visibility: stored.visibility,
     session: stored.session,
   });
 }));
 
 app.get('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
-  const stored = await sessionStorage.getSession(req.params.id);
+  const user = await getAuthenticatedUser(req.headers.authorization);
+  const stored = await sessionStorage.getSession(req.params.id, {
+    ...(user ? { userId: user.id } : {}),
+  });
   if (!stored) {
     res.status(404).json({
       error: 'Session not found',
@@ -82,6 +99,7 @@ app.get('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
     id: stored.id,
     shareUrl: buildShareUrl(stored.id),
     createdAt: stored.createdAt,
+    visibility: stored.visibility,
     session: stored.session,
   });
 }));
@@ -96,14 +114,18 @@ app.put('/api/profiles/:id', asyncRoute(async (req: Request, res: Response) => {
     return;
   }
 
-  const profile = await sessionStorage.saveProfile(req.params.id, req.body);
+  const user = await getAuthenticatedUser(req.headers.authorization);
+  const profileId = user ? getUserProfileId(user.id) : req.params.id;
+  const profile = await sessionStorage.saveProfile(profileId, req.body, user?.id);
   res.json({
     profile,
   });
 }));
 
 app.get('/api/profiles/:id', asyncRoute(async (req: Request, res: Response) => {
-  const profile = await sessionStorage.getProfile(req.params.id);
+  const user = await getAuthenticatedUser(req.headers.authorization);
+  const profileId = user ? getUserProfileId(user.id) : req.params.id;
+  const profile = await sessionStorage.getProfile(profileId);
   if (!profile) {
     res.status(404).json({
       error: 'Profile not found',

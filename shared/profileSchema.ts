@@ -1,5 +1,6 @@
 export interface DjProfile {
   id: string;
+  userId?: string;
   djName: string;
   djCrew: string;
   soundStyle: string;

@@ -7,7 +7,10 @@ export class MemorySessionStorage implements SessionStorage {
   private readonly sessions = new Map<string, StoredSession>();
   private readonly profiles = new Map<string, DjProfile>();
 
-  async saveSession(session: VersionedSession): Promise<StoredSession> {
+  async saveSession(
+    session: VersionedSession,
+    options: { userId?: string; visibility?: 'public' | 'private' } = {},
+  ): Promise<StoredSession> {
     let id = this.createSessionId();
     while (this.sessions.has(id)) {
       id = this.createSessionId();
@@ -17,22 +20,26 @@ export class MemorySessionStorage implements SessionStorage {
       id,
       session: cloneSession(session),
       createdAt: new Date().toISOString(),
+      ...(options.userId ? { userId: options.userId } : {}),
+      visibility: options.visibility || 'public',
     };
 
     this.sessions.set(id, stored);
     return this.cloneStoredSession(stored);
   }
 
-  async getSession(id: string): Promise<StoredSession | null> {
+  async getSession(id: string, options: { userId?: string } = {}): Promise<StoredSession | null> {
     const stored = this.sessions.get(id);
     if (!stored) return null;
+    if (stored.visibility === 'private' && stored.userId !== options.userId) return null;
 
     return this.cloneStoredSession(stored);
   }
 
-  async saveProfile(id: string, profile: DjProfileInput): Promise<DjProfile> {
+  async saveProfile(id: string, profile: DjProfileInput, userId?: string): Promise<DjProfile> {
     const stored: DjProfile = {
       id,
+      ...(userId ? { userId } : {}),
       ...profile,
     };
 

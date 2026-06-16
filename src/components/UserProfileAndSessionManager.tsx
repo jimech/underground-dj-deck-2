@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { audio } from '../utils/audioEngine';
 import { DrumInstrument } from '../types';
 import { MOOD_PRESETS, MoodPreset } from '../utils/presets';
@@ -15,6 +16,7 @@ import {
   saveProfile as saveCloudProfile,
   saveSession as saveCloudSession,
 } from '../lib/apiClient';
+import { supabaseBrowserClient } from '../lib/supabaseClient';
 
 const PROFILE_ID_STORAGE_KEY = 'dj_profile_id';
 
@@ -39,6 +41,10 @@ export default function UserProfileAndSessionManager() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileId, setProfileId] = useState('');
   const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
+  const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authStatus, setAuthStatus] = useState('');
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
 
   // Avatar seed / design accent index
   const [avatarIndex, setAvatarIndex] = useState(0);
@@ -68,6 +74,31 @@ export default function UserProfileAndSessionManager() {
   const [isCloudSaving, setIsCloudSaving] = useState(false);
   const [lastCloudShareUrl, setLastCloudShareUrl] = useState('');
   const [isGeneratingSessionName, setIsGeneratingSessionName] = useState(false);
+
+  useEffect(() => {
+    if (!supabaseBrowserClient) {
+      setAuthStatus('Anonymous local mode');
+      return;
+    }
+
+    let isMounted = true;
+
+    supabaseBrowserClient.auth.getSession().then(({ data }) => {
+      if (!isMounted) return;
+      setAuthUser(data.session?.user || null);
+      setAuthStatus(data.session?.user ? 'Signed in' : 'Ready for magic link sign-in');
+    });
+
+    const { data: listener } = supabaseBrowserClient.auth.onAuthStateChange((_event, session) => {
+      setAuthUser(session?.user || null);
+      setAuthStatus(session?.user ? 'Signed in' : 'Ready for magic link sign-in');
+    });
+
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   // Load initial settings and profile stats on mount
   useEffect(() => {
@@ -199,6 +230,43 @@ export default function UserProfileAndSessionManager() {
     }
 
     triggerAlert('DJ Profile customized and synced.', 'success');
+  };
+
+  const requestMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabaseBrowserClient) {
+      setAuthStatus('Supabase public auth config is missing.');
+      return;
+    }
+    if (!authEmail.trim()) {
+      setAuthStatus('Enter an email first.');
+      return;
+    }
+
+    setIsAuthSubmitting(true);
+    const { error } = await supabaseBrowserClient.auth.signInWithOtp({
+      email: authEmail.trim(),
+      options: {
+        emailRedirectTo: window.location.origin + window.location.pathname,
+      },
+    });
+
+    setIsAuthSubmitting(false);
+    if (error) {
+      setAuthStatus(error.message);
+      return;
+    }
+
+    setAuthStatus('Magic link sent. Check your email.');
+  };
+
+  const signOut = async () => {
+    if (!supabaseBrowserClient) return;
+
+    setIsAuthSubmitting(true);
+    const { error } = await supabaseBrowserClient.auth.signOut();
+    setIsAuthSubmitting(false);
+    setAuthStatus(error ? error.message : 'Signed out. Anonymous mode active.');
   };
 
   const triggerAlert = (text: string, type: 'info' | 'success' | 'error') => {
@@ -794,6 +862,59 @@ export default function UserProfileAndSessionManager() {
               <span className="text-[11px] font-mono font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 {soundStyle}
+              </span>
+            )}
+          </div>
+
+          <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-850/60 flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[8px] font-mono tracking-widest text-zinc-500 uppercase font-bold">
+                ACCOUNT LINK
+              </span>
+              <span className={`text-[7px] font-mono uppercase tracking-widest font-extrabold ${
+                authUser ? 'text-emerald-400' : 'text-zinc-500'
+              }`}>
+                {authUser ? 'SIGNED' : 'ANON'}
+              </span>
+            </div>
+
+            {authUser ? (
+              <div className="flex flex-col gap-2">
+                <span className="text-[10px] font-mono text-zinc-300 truncate">
+                  {authUser.email || authUser.id}
+                </span>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  disabled={isAuthSubmitting}
+                  className="self-start px-2.5 py-1.5 rounded-lg border border-zinc-800 text-[8px] font-mono uppercase font-extrabold text-zinc-400 hover:text-rose-300 hover:border-rose-700/70 transition disabled:opacity-50"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={requestMagicLink} className="flex flex-col gap-2">
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  className="w-full bg-zinc-950 text-zinc-200 font-mono text-[10px] rounded border border-zinc-800 py-1.5 px-2 focus:border-cyan-500 outline-none"
+                  placeholder="EMAIL FOR MAGIC LINK"
+                  disabled={!supabaseBrowserClient || isAuthSubmitting}
+                />
+                <button
+                  type="submit"
+                  disabled={!supabaseBrowserClient || isAuthSubmitting}
+                  className="self-start px-2.5 py-1.5 rounded-lg border border-cyan-500/30 text-[8px] font-mono uppercase font-extrabold text-cyan-300 hover:bg-cyan-400 hover:text-black transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAuthSubmitting ? 'Sending...' : 'Send Magic Link'}
+                </button>
+              </form>
+            )}
+
+            {authStatus && (
+              <span className="text-[8px] text-zinc-500 font-mono leading-relaxed">
+                {authStatus}
               </span>
             )}
           </div>
