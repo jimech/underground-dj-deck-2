@@ -159,7 +159,14 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 **Dependencies:** APP-003.
 
-**Status:** Ready.
+**Status:** Done.
+
+**Completed:**
+- Added public API endpoints for DJ profiles and public sets.
+- Added clean frontend routes for `/profile/:id` and `/sets/:id`.
+- Added public set poster-style preview with BPM, operator, style, and open-in-studio action.
+- Added copy actions for public profile links and clean public set links.
+- Kept private sessions hidden from public set lookups.
 
 ---
 
@@ -178,7 +185,13 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 - CI passes on clean pushes.
 - Failing tests block merges.
 
-**Status:** Ready.
+**Status:** Done.
+
+**Completed:**
+- Added GitHub Actions CI for pushes and pull requests to `main`.
+- Runs `npm ci`, TypeScript checking, unit tests, production build, and Playwright smoke tests.
+- Caches npm dependencies through `actions/setup-node`.
+- Uploads Playwright traces/test output on failures.
 
 ---
 

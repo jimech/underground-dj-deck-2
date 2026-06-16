@@ -194,10 +194,14 @@ Signed-in users also get an account-scoped cloud library. These routes require a
 - `PUT /api/sessions/:id` renames/updates an owned session payload.
 - `DELETE /api/sessions/:id` deletes an owned session.
 
+Public set pages use clean browser URLs like `/sets/:id`. The matching API endpoint is `GET /api/public/sets/:id`; it only returns sessions marked `public`, so private cloud sessions are not exposed.
+
 #### Profile API
 The app also syncs an anonymous browser profile to the backend when available, while keeping localStorage as the immediate offline fallback.
 
 When a Supabase auth session is present, the frontend sends the user's access token to the API. The backend verifies that token and stores the profile under the authenticated Supabase user ID. Signed-out users keep using the anonymous browser profile ID.
+
+Public DJ profile pages use `/profile/:id`. The matching API endpoint is `GET /api/public/profiles/:id`; it returns display fields only and never returns Supabase auth email, access tokens, service keys, or raw user IDs.
 
 ```bash
 # Save/update an anonymous DJ profile

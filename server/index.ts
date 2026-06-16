@@ -17,6 +17,10 @@ function buildShareUrl(id: string): string {
   return `${frontendUrl.replace(/\/$/, '')}/?sessionId=${encodeURIComponent(id)}`;
 }
 
+function buildPublicSetUrl(id: string): string {
+  return `${frontendUrl.replace(/\/$/, '')}/sets/${encodeURIComponent(id)}`;
+}
+
 function asyncRoute(handler: (req: Request, res: Response, next: NextFunction) => Promise<void>) {
   return (req: Request, res: Response, next: NextFunction) => {
     handler(req, res, next).catch(next);
@@ -51,6 +55,61 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+app.get('/api/public/profiles/:id', asyncRoute(async (req: Request, res: Response) => {
+  const profile = await sessionStorage.getProfile(req.params.id);
+  if (!profile) {
+    res.status(404).json({
+      error: 'Profile not found',
+    });
+    return;
+  }
+
+  res.json({
+    profile: {
+      id: profile.id,
+      djName: profile.djName,
+      djCrew: profile.djCrew,
+      soundStyle: profile.soundStyle,
+      avatarIndex: profile.avatarIndex,
+      timeMixed: profile.timeMixed,
+      vinylSpins: profile.vinylSpins,
+    },
+  });
+}));
+
+app.get('/api/public/sets/:id', asyncRoute(async (req: Request, res: Response) => {
+  const stored = await sessionStorage.getSession(req.params.id);
+  if (!stored || stored.visibility !== 'public') {
+    res.status(404).json({
+      error: 'Set not found',
+    });
+    return;
+  }
+
+  const ownerProfile = stored.userId
+    ? await sessionStorage.getProfile(getUserProfileId(stored.userId))
+    : null;
+
+  res.json({
+    set: {
+      id: stored.id,
+      publicUrl: buildPublicSetUrl(stored.id),
+      shareUrl: buildShareUrl(stored.id),
+      createdAt: stored.createdAt,
+      session: stored.session,
+      profile: ownerProfile ? {
+        id: ownerProfile.id,
+        djName: ownerProfile.djName,
+        djCrew: ownerProfile.djCrew,
+        soundStyle: ownerProfile.soundStyle,
+        avatarIndex: ownerProfile.avatarIndex,
+        timeMixed: ownerProfile.timeMixed,
+        vinylSpins: ownerProfile.vinylSpins,
+      } : null,
+    },
+  });
+}));
+
 app.post('/api/sessions', asyncRoute(async (req: Request, res: Response) => {
   const validationError = getSessionValidationError(req.body);
   if (validationError) {
@@ -77,6 +136,7 @@ app.post('/api/sessions', asyncRoute(async (req: Request, res: Response) => {
   res.status(201).json({
     id: stored.id,
     shareUrl: buildShareUrl(stored.id),
+    publicUrl: buildPublicSetUrl(stored.id),
     createdAt: stored.createdAt,
     visibility: stored.visibility,
     session: stored.session,
@@ -97,6 +157,7 @@ app.get('/api/sessions', asyncRoute(async (req: Request, res: Response) => {
     sessions: sessions.map((stored) => ({
       id: stored.id,
       shareUrl: buildShareUrl(stored.id),
+      publicUrl: buildPublicSetUrl(stored.id),
       createdAt: stored.createdAt,
       visibility: stored.visibility,
       session: stored.session,
@@ -119,6 +180,7 @@ app.get('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
   res.json({
     id: stored.id,
     shareUrl: buildShareUrl(stored.id),
+    publicUrl: buildPublicSetUrl(stored.id),
     createdAt: stored.createdAt,
     visibility: stored.visibility,
     session: stored.session,
@@ -154,6 +216,7 @@ app.put('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
   res.json({
     id: stored.id,
     shareUrl: buildShareUrl(stored.id),
+    publicUrl: buildPublicSetUrl(stored.id),
     createdAt: stored.createdAt,
     visibility: stored.visibility,
     session: stored.session,

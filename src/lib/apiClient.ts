@@ -30,6 +30,7 @@ export interface HealthResponse {
 export interface SessionResponse {
   id: string;
   shareUrl: string;
+  publicUrl: string;
   createdAt: string;
   visibility: 'public' | 'private';
   session: VersionedSession;
@@ -45,6 +46,23 @@ export interface DeleteSessionResponse {
 
 export interface ProfileResponse {
   profile: DjProfile;
+}
+
+export type PublicProfile = Omit<DjProfile, 'userId'>;
+
+export interface PublicProfileResponse {
+  profile: PublicProfile;
+}
+
+export interface PublicSetResponse {
+  set: {
+    id: string;
+    publicUrl: string;
+    shareUrl: string;
+    createdAt: string;
+    session: VersionedSession;
+    profile: PublicProfile | null;
+  };
 }
 
 async function parseJsonResponse(response: Response): Promise<unknown> {
@@ -152,6 +170,14 @@ export function saveProfile(id: string, profile: DjProfileInput): Promise<ApiRes
     method: 'PUT',
     body: JSON.stringify(profile),
   });
+}
+
+export function getPublicProfile(id: string): Promise<ApiResult<PublicProfileResponse>> {
+  return requestJson<PublicProfileResponse>(`/api/public/profiles/${encodeURIComponent(id)}`);
+}
+
+export function getPublicSet(id: string): Promise<ApiResult<PublicSetResponse>> {
+  return requestJson<PublicSetResponse>(`/api/public/sets/${encodeURIComponent(id)}`);
 }
 
 export function generateSessionNames(input: SessionNameRequest): Promise<ApiResult<SessionNameResponse>> {

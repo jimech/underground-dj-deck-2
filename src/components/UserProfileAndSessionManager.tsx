@@ -282,6 +282,24 @@ export default function UserProfileAndSessionManager() {
     }, 4000);
   };
 
+  const getPublicProfileUrl = () => {
+    const publicId = authUser ? `user_${authUser.id}` : profileId;
+    if (!publicId) return '';
+
+    return `${window.location.origin}/profile/${encodeURIComponent(publicId)}`;
+  };
+
+  const copyPublicProfileLink = async () => {
+    const publicUrl = getPublicProfileUrl();
+    if (!publicUrl) {
+      triggerAlert('Save or load your profile before sharing it.', 'info');
+      return;
+    }
+
+    await navigator.clipboard.writeText(publicUrl);
+    triggerAlert('Public profile link copied.', 'success');
+  };
+
   const refreshCloudSessions = async (showAlert = false) => {
     if (!authUser) {
       setCloudSessions([]);
@@ -543,12 +561,12 @@ export default function UserProfileAndSessionManager() {
       setLastCloudShareUrl(result.data.shareUrl);
       setCloudSessions((current) => [result.data, ...current.filter((session) => session.id !== result.data.id)]);
       try {
-        await navigator.clipboard.writeText(result.data.shareUrl);
+        await navigator.clipboard.writeText(result.data.publicUrl || result.data.shareUrl);
         setCopiedShareLink(true);
         setTimeout(() => setCopiedShareLink(false), 2000);
-        triggerAlert(`Cloud link copied for "${result.data.session.name}".`, 'success');
+        triggerAlert(`Public set link copied for "${result.data.session.name}".`, 'success');
       } catch {
-        triggerAlert(`Cloud link created for "${result.data.session.name}". Copy it from the share panel.`, 'success');
+        triggerAlert(`Cloud set link created for "${result.data.session.name}". Copy it from the share panel.`, 'success');
       }
     } catch (err: any) {
       triggerAlert(err?.message || 'Cloud save failed. Is the API server running?', 'error');
@@ -962,6 +980,13 @@ export default function UserProfileAndSessionManager() {
                 >
                   Sign Out
                 </button>
+                <button
+                  type="button"
+                  onClick={copyPublicProfileLink}
+                  className="self-start px-2.5 py-1.5 rounded-lg border border-cyan-500/30 text-[8px] font-mono uppercase font-extrabold text-cyan-300 hover:bg-cyan-400 hover:text-black transition"
+                >
+                  Copy Public Profile
+                </button>
               </div>
             ) : (
               <form onSubmit={requestMagicLink} className="flex flex-col gap-2">
@@ -981,6 +1006,16 @@ export default function UserProfileAndSessionManager() {
                   {isAuthSubmitting ? 'Sending...' : 'Send Magic Link'}
                 </button>
               </form>
+            )}
+
+            {!authUser && profileId && (
+              <button
+                type="button"
+                onClick={copyPublicProfileLink}
+                className="self-start px-2.5 py-1.5 rounded-lg border border-zinc-800 text-[8px] font-mono uppercase font-extrabold text-zinc-400 hover:text-cyan-300 hover:border-cyan-700/70 transition"
+              >
+                Copy Local Public Profile
+              </button>
             )}
 
             {authStatus && (
@@ -1279,7 +1314,7 @@ export default function UserProfileAndSessionManager() {
 
             {lastCloudShareUrl && (
               <div className="flex flex-col gap-1.5 border-t border-zinc-900 pt-2.5">
-                <span className="text-[7.5px] font-mono text-zinc-500 uppercase tracking-wider font-extrabold">Latest Cloud Link:</span>
+                <span className="text-[7.5px] font-mono text-zinc-500 uppercase tracking-wider font-extrabold">Latest Cloud Studio Link:</span>
                 <div className="flex gap-1.5">
                   <input
                     type="text"
@@ -1442,12 +1477,12 @@ export default function UserProfileAndSessionManager() {
                         type="button"
                         onClick={async (e) => {
                           e.stopPropagation();
-                          await navigator.clipboard.writeText(cloudSession.shareUrl);
+                          await navigator.clipboard.writeText(cloudSession.publicUrl || cloudSession.shareUrl);
                           setLastCloudShareUrl(cloudSession.shareUrl);
-                          triggerAlert('Cloud link copied.', 'success');
+                          triggerAlert('Public set link copied.', 'success');
                         }}
                         className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-cyan-300 hover:bg-cyan-950/15 transition"
-                        title="Copy cloud link"
+                        title="Copy public set page link"
                       >
                         <Copy size={10} />
                       </button>

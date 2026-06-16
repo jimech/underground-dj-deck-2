@@ -14,8 +14,16 @@ import { Power, Radio, Disc, Terminal, Award, Zap, Shield, Headphones, HelpCircl
 import { motion, AnimatePresence } from 'motion/react';
 import OnboardingTour from './components/OnboardingTour';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
+import { getPublicRouteFromLocation, PublicPage } from './components/PublicPages';
 
 export default function App() {
+  const publicRoute = getPublicRouteFromLocation(window.location.pathname);
+  if (publicRoute) return <PublicPage route={publicRoute} />;
+
+  return <StudioApp />;
+}
+
+function StudioApp() {
   const [isPowerOn, setIsPowerOn] = useState(false);
   const [activeSyncHeartbeats, setActiveSyncHeartbeats] = useState(0);
   const [stickerText, setStickerText] = useState(audio.stickerText);
