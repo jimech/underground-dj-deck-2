@@ -244,7 +244,101 @@ curl -X POST http://localhost:8787/api/ai/flyer-copy \
 npm run build
 ```
 
-### 4. Quality Checks
+### 4. Deployment Guide
+
+The project can be deployed in two modes:
+
+#### Static-Only Portfolio Mode
+Use this when you only need the browser-based Web Audio rig.
+
+```bash
+npm run build
+```
+
+Deploy the generated `dist/` folder to GitHub Pages, Netlify, Vercel static hosting, Cloudflare Pages, or any static host. In this mode:
+
+- Web Audio, recording, local sessions, local profiles, and poster export work in the browser.
+- Cloud session links, Supabase persistence, profile sync, and AI copy endpoints are unavailable.
+- No backend secrets are required.
+
+#### Full-Stack Mode
+Use this when you want cloud sessions, profile sync, and AI features.
+
+Recommended split:
+
+- **Frontend:** deploy the Vite build to Vercel, Netlify, Cloudflare Pages, or similar.
+- **Backend:** deploy the Express API to Render, Railway, Fly.io, Cloud Run, or a Node-capable server.
+- **Database:** Supabase Postgres using the migrations in `supabase/migrations/`.
+
+Backend start command:
+
+```bash
+npm run server
+```
+
+Frontend build command:
+
+```bash
+npm run build
+```
+
+Required frontend environment variable:
+
+```bash
+VITE_API_BASE_URL="https://YOUR_API_HOST"
+```
+
+This value is public browser config. Never put secrets in `VITE_*` variables.
+
+Required backend environment variables:
+
+```bash
+APP_URL="https://YOUR_FRONTEND_HOST"
+SESSION_STORAGE_DRIVER="supabase"
+SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVER_ONLY_SUPABASE_SECRET"
+GEMINI_API_KEY="YOUR_SERVER_ONLY_GEMINI_KEY"
+```
+
+Backend secret rules:
+
+- Store real values only in local `.env` or deployment-provider secret settings.
+- Never commit `.env`.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` or `GEMINI_API_KEY` in frontend code.
+- Never prefix backend secrets with `VITE_`.
+
+Before enabling Supabase persistence, run these SQL files in the Supabase SQL Editor:
+
+```text
+supabase/migrations/202606160001_create_dj_sessions.sql
+supabase/migrations/202606160002_create_dj_profiles.sql
+```
+
+Pre-deploy checks:
+
+```bash
+npm run lint
+npm test
+npm run test:e2e
+npm run build
+```
+
+Health check after backend deploy:
+
+```bash
+curl https://YOUR_API_HOST/api/health
+```
+
+Expected response:
+
+```json
+{
+  "ok": true,
+  "service": "underground-dj-monolith-api"
+}
+```
+
+### 5. Quality Checks
 ```bash
 # Type-check the project
 npm run lint
@@ -255,7 +349,7 @@ npm test
 # Run browser smoke tests
 npm run test:e2e
 ```
-Porting the app to a portfolio? Since it relies purely on client-side Web Audio synthesis, the compiled output in `./dist` can be hosted **entirely for free** on services such as **GitHub Pages**, **Vercel**, **Netlify**, or **Cloud Run** with zero database setup, zero server cold starts, and absolute responsiveness!
+Porting the app to a portfolio? The static-only mode keeps the compiled output in `./dist` hostable on free static hosting. Use full-stack mode only when you want cloud persistence and AI features.
 
 ---
 
