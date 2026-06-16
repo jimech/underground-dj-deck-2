@@ -116,6 +116,25 @@ npm run dev
 ```
 Open `http://localhost:3000` to interact with the console.
 
+### 2.1 Full-Stack Development Mode
+The app can also run with a local Express API for cloud-session and AI features.
+
+```bash
+# Start the Express API on http://localhost:8787
+npm run server
+
+# In another terminal, start the Vite frontend
+npm run dev
+```
+
+For convenience on macOS/Linux, both processes can be started together:
+
+```bash
+npm run dev:full
+```
+
+The backend health check is available at `http://localhost:8787/api/health` and returns a JSON status payload.
+
 ### 3. Production Build
 ```bash
 # Compile and bundle code to optimized static files

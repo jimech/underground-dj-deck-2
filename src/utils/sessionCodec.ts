@@ -1,66 +1,11 @@
-import { DrumInstrument } from '../types';
+import {
+  getSessionValidationError,
+  validateSessionSchema,
+  type VersionedSession,
+} from '../../shared/sessionSchema';
 
-export interface VersionedSession {
-  version: number;
-  name: string;
-  timestamp: number;
-  data: {
-    bpm: number;
-    crossfaderValue: number;
-    deckAValues: {
-      vol: number;
-      low: number;
-      mid: number;
-      high: number;
-      filter: number;
-    };
-    deckBValues: {
-      vol: number;
-      low: number;
-      mid: number;
-      high: number;
-      filter: number;
-    };
-    swingAmountValue: number;
-    flangerValue: number;
-    deckSelectedTracks: {
-      A: number;
-      B: number;
-    };
-    deckPlayStates: {
-      A: boolean;
-      B: boolean;
-    };
-    deckReversed?: {
-      A: boolean;
-      B: boolean;
-    };
-    effectsVinylCrackleActive: boolean;
-    effectsVinylCrackleVolume: number;
-    effectsVinylCrackleFreq: number;
-    effectsVinylCrackleQ: number;
-    ambientMode?: 'none' | 'subway' | 'rain' | 'crowd' | 'drone';
-    visualizerMode?: string;
-    stickerText?: string;
-    sequencerTracks: {
-      [key in DrumInstrument]: boolean[];
-    };
-  };
-}
-
-/**
- * Checks if a parsed session matches the core structure expected by the Audio Rig.
- */
-export function validateSessionSchema(parsed: any): boolean {
-  if (!parsed || typeof parsed !== 'object') return false;
-  if (!parsed.data || typeof parsed.data !== 'object') return false;
-  
-  const d = parsed.data;
-  if (typeof d.bpm !== 'number' || typeof d.crossfaderValue !== 'number') return false;
-  if (!d.deckAValues || !d.deckBValues || !d.sequencerTracks) return false;
-  
-  return true;
-}
+export { getSessionValidationError, validateSessionSchema };
+export type { VersionedSession };
 
 /**
  * Serializes a full session object into a compact Base64 share code.
@@ -94,8 +39,9 @@ export function deserializeSession(code: string): VersionedSession {
     const jsonStr = new TextDecoder().decode(bytes);
     const parsed = JSON.parse(jsonStr);
     
-    if (!validateSessionSchema(parsed)) {
-      throw new Error('Mismatched performance properties mapping');
+    const validationError = getSessionValidationError(parsed);
+    if (validationError) {
+      throw new Error(validationError);
     }
 
     return {
@@ -105,6 +51,7 @@ export function deserializeSession(code: string): VersionedSession {
       data: parsed.data
     };
   } catch (err) {
-    throw new Error('Corrupted or version-incompatible session share code');
+    const detail = err instanceof Error ? `: ${err.message}` : '';
+    throw new Error(`Corrupted or version-incompatible session share code${detail}`);
   }
 }

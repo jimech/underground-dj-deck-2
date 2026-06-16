@@ -249,7 +249,7 @@ export function drawSetPoster(canvas: HTMLCanvasElement, meta: PosterMetadata): 
     ctx.textAlign = 'left';
     ctx.font = 'bold 9px monospace';
     ctx.fillStyle = '#71717a';
-    ctx.fillText('RIG LOCK SYSTEM TOKEN - BLOC-F415', barcodeX, barcodeY - 10);
+    ctx.fillText('RIG LOCK SYSTEM CODE - BLOC-F415', barcodeX, barcodeY - 10);
 
     const barPattern = [2, 4, 1, 3, 5, 1, 8, 2, 4, 2, 6, 1, 3, 2, 5, 7, 2, 1, 4, 2, 3, 10, 4, 2, 1, 6, 2, 3, 5, 3, 1, 8, 2, 4];
     for (let b = 0; b < barPattern.length; b++) {
