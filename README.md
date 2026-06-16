@@ -135,6 +135,36 @@ npm run dev:full
 
 The backend health check is available at `http://localhost:8787/api/health` and returns a JSON status payload.
 
+The frontend API client uses `VITE_API_BASE_URL` when set, otherwise it defaults to `http://localhost:8787`. This value is browser-visible public configuration; never place secrets or API keys in `VITE_*` variables.
+
+#### Session API
+The local API includes development-only in-memory session sharing. These sessions reset whenever the server restarts; database persistence is planned as a later full-stack milestone.
+
+```bash
+# Save a full VersionedSession JSON payload
+curl -X POST http://localhost:8787/api/sessions \
+  -H "Content-Type: application/json" \
+  -d @session.json
+```
+
+Successful response shape:
+
+```json
+{
+  "id": "abc123xyz",
+  "shareUrl": "http://localhost:3000/?sessionId=abc123xyz",
+  "createdAt": "2026-06-16T00:00:00.000Z",
+  "session": "the saved VersionedSession payload"
+}
+```
+
+```bash
+# Load a saved session by public ID
+curl http://localhost:8787/api/sessions/abc123xyz
+```
+
+Invalid session payloads return `400` with a validation detail. Unknown session IDs return `404`.
+
 ### 3. Production Build
 ```bash
 # Compile and bundle code to optimized static files

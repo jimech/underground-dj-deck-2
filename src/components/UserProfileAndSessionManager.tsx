@@ -7,7 +7,8 @@ import {
   Sparkles, Award, Clock, Disc, ArrowRight, CheckCircle2, ChevronRight, X,
   Shield, RefreshCw, Share2, Copy, ExternalLink, Code, FileImage
 } from 'lucide-react';
-import { serializeSession, deserializeSession } from '../utils/sessionCodec';
+import { serializeSession, deserializeSession, type VersionedSession } from '../utils/sessionCodec';
+import { getSession as getCloudSession, saveSession as saveCloudSession } from '../lib/apiClient';
 
 export default function UserProfileAndSessionManager() {
   // --- DJ Profile States ---
@@ -45,6 +46,8 @@ export default function UserProfileAndSessionManager() {
   const [pastedShareCode, setPastedShareCode] = useState('');
   const [isSharingOpen, setIsSharingOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
+  const [isCloudSaving, setIsCloudSaving] = useState(false);
+  const [lastCloudShareUrl, setLastCloudShareUrl] = useState('');
 
   // Load initial settings and profile stats on mount
   useEffect(() => {
@@ -293,6 +296,37 @@ export default function UserProfileAndSessionManager() {
     }
   };
 
+  const saveCurrentSessionToCloud = async () => {
+    if (isCloudSaving) return;
+
+    const nameToSave = sessionName.trim() || `Cloud Mix ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const liveRig = getFullCurrentRigSession(nameToSave) as VersionedSession;
+
+    setIsCloudSaving(true);
+    try {
+      const result = await saveCloudSession(liveRig);
+      if (result.ok === false) {
+        const detail = result.detail ? ` ${result.detail}` : '';
+        triggerAlert(`Cloud save failed.${detail}`, 'error');
+        return;
+      }
+
+      setLastCloudShareUrl(result.data.shareUrl);
+      try {
+        await navigator.clipboard.writeText(result.data.shareUrl);
+        setCopiedShareLink(true);
+        setTimeout(() => setCopiedShareLink(false), 2000);
+        triggerAlert(`Cloud link copied for "${result.data.session.name}".`, 'success');
+      } catch {
+        triggerAlert(`Cloud link created for "${result.data.session.name}". Copy it from the share panel.`, 'success');
+      }
+    } catch (err: any) {
+      triggerAlert(err?.message || 'Cloud save failed. Is the API server running?', 'error');
+    } finally {
+      setIsCloudSaving(false);
+    }
+  };
+
   const handleImportShareCode = (e: React.FormEvent) => {
     e.preventDefault();
     if (!pastedShareCode.trim()) {
@@ -310,10 +344,41 @@ export default function UserProfileAndSessionManager() {
     }
   };
 
-  // Load session from URL Hash parameter if available on startup or hash change
+  // Load session from clean backend links first, then fall back to legacy hash share codes.
   useEffect(() => {
-    const checkUrlHashSession = () => {
+    let isCancelled = false;
+
+    const cleanSharedSessionUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('sessionId');
+      const query = params.toString();
+      window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+    };
+
+    const checkUrlSharedSession = async () => {
       try {
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('sessionId');
+        if (sessionId) {
+          const result = await getCloudSession(sessionId);
+          if (isCancelled) return;
+
+          if (result.ok === false) {
+            setTimeout(() => {
+              triggerAlert(`Cloud session link failed: ${result.detail || result.error}`, 'error');
+            }, 500);
+            return;
+          }
+
+          loadSession(result.data.session);
+          setLastCloudShareUrl(result.data.shareUrl);
+          setTimeout(() => {
+            triggerAlert(`Connected cloud performance URL: "${result.data.session.name}"!`, 'success');
+          }, 500);
+          cleanSharedSessionUrl();
+          return;
+        }
+
         const hash = window.location.hash;
         if (hash && hash.startsWith('#session=')) {
           const code = hash.substring(9); // '#session=' is length 9
@@ -326,25 +391,28 @@ export default function UserProfileAndSessionManager() {
             }, 500);
             
             // Clean up the hash gracefully so subsequent actions or refreshes are smooth
-            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            cleanSharedSessionUrl();
           }
         }
       } catch (err: any) {
-        console.error('Failed to parse URL hash mix', err);
+        console.error('Failed to parse URL mix', err);
         // Stagger alert
         setTimeout(() => {
-          triggerAlert('Invalid or corrupted session link in URL hash.', 'error');
+          triggerAlert('Invalid or corrupted session link in URL.', 'error');
         }, 500);
       }
     };
 
     // Stagger check slightly to guarantee audio context has mounted/stabilized
-    const initialCheckTimer = setTimeout(checkUrlHashSession, 400);
+    const initialCheckTimer = setTimeout(checkUrlSharedSession, 400);
 
-    window.addEventListener('hashchange', checkUrlHashSession);
+    window.addEventListener('hashchange', checkUrlSharedSession);
+    window.addEventListener('popstate', checkUrlSharedSession);
     return () => {
+      isCancelled = true;
       clearTimeout(initialCheckTimer);
-      window.removeEventListener('hashchange', checkUrlHashSession);
+      window.removeEventListener('hashchange', checkUrlSharedSession);
+      window.removeEventListener('popstate', checkUrlSharedSession);
     };
   }, []);
 
@@ -791,7 +859,7 @@ export default function UserProfileAndSessionManager() {
         </form>
 
         {/* Quick Action Triggers for Session Sharing/Export */}
-        <div className="grid grid-cols-3 gap-1.5 text-[8px] font-mono">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[8px] font-mono">
           <button
             type="button"
             onClick={exportCurrentRigWithoutSaving}
@@ -814,6 +882,17 @@ export default function UserProfileAndSessionManager() {
           >
             <Share2 size={10} className={isSharingOpen ? 'text-orange-400 animate-pulse' : 'text-orange-500'} />
             <span>Share Link</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={saveCurrentSessionToCloud}
+            disabled={isCloudSaving}
+            className="py-2 px-1.5 rounded-xl border border-zinc-800 bg-zinc-950/40 hover:bg-zinc-950 text-zinc-300 hover:text-cyan-300 hover:border-cyan-700/70 transition duration-150 cursor-pointer flex items-center justify-center gap-1 font-extrabold uppercase select-none text-[7.5px] disabled:opacity-50 disabled:cursor-wait"
+            title="Save current rig to the local API and copy a short cloud link"
+          >
+            <ExternalLink size={10} className={isCloudSaving ? 'text-cyan-300 animate-pulse' : 'text-cyan-400'} />
+            <span>{isCloudSaving ? 'Saving...' : 'Cloud Link'}</span>
           </button>
 
           <button
@@ -869,6 +948,31 @@ export default function UserProfileAndSessionManager() {
                 </button>
               </div>
             </div>
+
+            {lastCloudShareUrl && (
+              <div className="flex flex-col gap-1.5 border-t border-zinc-900 pt-2.5">
+                <span className="text-[7.5px] font-mono text-zinc-500 uppercase tracking-wider font-extrabold">Latest Cloud Link:</span>
+                <div className="flex gap-1.5">
+                  <input
+                    type="text"
+                    readOnly
+                    value={lastCloudShareUrl}
+                    className="flex-1 bg-zinc-950 text-cyan-200 font-mono text-[8px] rounded-lg border border-zinc-800 py-1.5 px-2 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(lastCloudShareUrl);
+                      triggerAlert('Latest cloud link copied.', 'success');
+                    }}
+                    className="px-2.5 py-1.5 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-400 hover:text-black hover:font-bold border border-cyan-500/30 rounded-lg text-[8px] font-mono uppercase transition cursor-pointer"
+                    title="Copy latest saved cloud link"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Paste/Import Section */}
             <form onSubmit={handleImportShareCode} className="flex flex-col gap-1.5 border-t border-zinc-900 pt-2.5">
