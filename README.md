@@ -238,6 +238,19 @@ curl -X POST http://localhost:8787/api/ai/session-name \
 
 Set `GEMINI_API_KEY` only in local `.env` or deployment secrets. The key is read by the Express server and must never be placed in `VITE_*` variables or frontend code. If the key is missing or the AI call fails, the endpoint returns a local fallback response so the UI remains usable.
 
+AI endpoints and write endpoints have lightweight server-side rate limits. Limits are keyed by client IP, or by a short hash of the bearer token when a signed-in user is present. The token itself is never stored in the limiter.
+
+Optional tuning env vars:
+
+```bash
+AI_RATE_LIMIT_MAX=20
+AI_RATE_LIMIT_WINDOW_MS=600000
+WRITE_RATE_LIMIT_MAX=120
+WRITE_RATE_LIMIT_WINDOW_MS=600000
+```
+
+Requests above the limit return `429` with `Retry-After` and `X-RateLimit-*` headers. JSON request bodies are capped at 1 MB; larger payloads return `413`.
+
 The poster generator also uses the server-side AI path for flyer copy:
 
 ```bash

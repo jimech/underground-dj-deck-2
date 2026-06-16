@@ -210,7 +210,14 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 **Dependencies:** APP-004.
 
-**Status:** Ready.
+**Status:** Done.
+
+**Completed:**
+- Added dependency-free backend rate limiting for AI and write endpoints.
+- Buckets by client IP or a short bearer-token hash without storing raw tokens.
+- Added `429` responses with retry and rate-limit headers.
+- Added clear `413` responses for request bodies over 1 MB.
+- Documented rate-limit tuning environment variables.
 
 ---
 

@@ -7,11 +7,14 @@ import { getFlyerCopyRequestError } from '../shared/aiFlyerCopySchema';
 import { getProfileValidationError } from '../shared/profileSchema';
 import { getSessionNameRequestError } from '../shared/aiSessionNameSchema';
 import { getSessionValidationError } from '../shared/sessionSchema';
+import { aiRateLimit, writeRateLimit } from './rateLimit';
 import { sessionStorage } from './storage';
 
 const app = express();
 const port = Number(process.env.PORT || process.env.API_PORT || 8787);
 const frontendUrl = process.env.APP_URL || 'http://localhost:3000';
+
+app.set('trust proxy', 1);
 
 function buildShareUrl(id: string): string {
   return `${frontendUrl.replace(/\/$/, '')}/?sessionId=${encodeURIComponent(id)}`;
@@ -110,7 +113,7 @@ app.get('/api/public/sets/:id', asyncRoute(async (req: Request, res: Response) =
   });
 }));
 
-app.post('/api/sessions', asyncRoute(async (req: Request, res: Response) => {
+app.post('/api/sessions', writeRateLimit, asyncRoute(async (req: Request, res: Response) => {
   const validationError = getSessionValidationError(req.body);
   if (validationError) {
     res.status(400).json({
@@ -187,7 +190,7 @@ app.get('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
   });
 }));
 
-app.put('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
+app.put('/api/sessions/:id', writeRateLimit, asyncRoute(async (req: Request, res: Response) => {
   const validationError = getSessionValidationError(req.body);
   if (validationError) {
     res.status(400).json({
@@ -223,7 +226,7 @@ app.put('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
   });
 }));
 
-app.delete('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) => {
+app.delete('/api/sessions/:id', writeRateLimit, asyncRoute(async (req: Request, res: Response) => {
   const user = await getAuthenticatedUser(req.headers.authorization);
   if (!user) {
     res.status(401).json({
@@ -245,7 +248,7 @@ app.delete('/api/sessions/:id', asyncRoute(async (req: Request, res: Response) =
   });
 }));
 
-app.put('/api/profiles/:id', asyncRoute(async (req: Request, res: Response) => {
+app.put('/api/profiles/:id', writeRateLimit, asyncRoute(async (req: Request, res: Response) => {
   const validationError = getProfileValidationError(req.body);
   if (validationError) {
     res.status(400).json({
@@ -279,7 +282,7 @@ app.get('/api/profiles/:id', asyncRoute(async (req: Request, res: Response) => {
   });
 }));
 
-app.post('/api/ai/session-name', asyncRoute(async (req: Request, res: Response) => {
+app.post('/api/ai/session-name', aiRateLimit, asyncRoute(async (req: Request, res: Response) => {
   const validationError = getSessionNameRequestError(req.body);
   if (validationError) {
     res.status(400).json({
@@ -293,7 +296,7 @@ app.post('/api/ai/session-name', asyncRoute(async (req: Request, res: Response) 
   res.json(result);
 }));
 
-app.post('/api/ai/flyer-copy', asyncRoute(async (req: Request, res: Response) => {
+app.post('/api/ai/flyer-copy', aiRateLimit, asyncRoute(async (req: Request, res: Response) => {
   const validationError = getFlyerCopyRequestError(req.body);
   if (validationError) {
     res.status(400).json({
@@ -308,11 +311,28 @@ app.post('/api/ai/flyer-copy', asyncRoute(async (req: Request, res: Response) =>
 }));
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (isPayloadTooLargeError(err)) {
+    res.status(413).json({
+      error: 'Payload too large',
+      detail: 'Request body must be 1 MB or smaller.',
+    });
+    return;
+  }
+
   console.error(err);
   res.status(500).json({
     error: 'Internal server error',
   });
 });
+
+function isPayloadTooLargeError(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'type' in err &&
+    (err as { type?: unknown }).type === 'entity.too.large'
+  );
+}
 
 app.listen(port, () => {
   console.log(`Underground DJ Monolith API listening on http://localhost:${port}`);
