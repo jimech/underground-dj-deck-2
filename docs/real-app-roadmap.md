@@ -221,6 +221,64 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-010: Deployment Config Templates
+
+**Goal:** Make production deployment less manual without committing secrets.
+
+**Scope:**
+- Add backend host template.
+- Add frontend SPA route fallback config.
+- Add production smoke-check script.
+- Document which values must be entered manually in hosting dashboards.
+
+**Acceptance Criteria:**
+- Backend template has no committed secrets.
+- Frontend clean routes work on static hosts.
+- A deployed frontend/backend can be verified with one command.
+
+**Dependencies:** APP-004, APP-005, APP-007.
+
+**Status:** Done.
+
+**Completed:**
+- Added `render.yaml` for a Render-style Node API deploy.
+- Added `vercel.json` and `public/_redirects` for SPA route fallback.
+- Added `npm run smoke:prod` for post-deploy health and route checks.
+- Updated deployment docs and migration list.
+
+---
+
+### APP-011: API Runtime Observability
+
+**Goal:** Make the public API easier to operate and debug without leaking sensitive data.
+
+**Scope:**
+- Add request IDs to responses.
+- Add structured request completion logs.
+- Add safer error logs.
+- Add graceful shutdown handling for production hosts.
+
+**Acceptance Criteria:**
+- Every API response has `X-Request-Id`.
+- Logs include route timing and status without request bodies or auth headers.
+- API exits cleanly on `SIGTERM` and `SIGINT`.
+
+**Dependencies:** APP-004.
+
+**Status:** Done.
+
+**Completed:**
+- Added generated/reused request IDs and `X-Request-Id` response headers.
+- Added structured request logs with method, path, status, duration, and request ID.
+- Added request IDs to server error responses.
+- Added graceful shutdown with configurable `SHUTDOWN_GRACE_MS`.
+
+---
+
 ## Recommended Next Step
 
-Start with **APP-001: Supabase Auth Setup**. Authentication changes the app from “cloud-enabled” to “real user application,” and it unlocks the rest of the product work: owned profiles, owned sessions, libraries, and public pages.
+Deploy the backend and frontend manually when you are ready:
+
+1. Create/connect the backend service and enter backend env vars in the host dashboard.
+2. Create/connect the frontend static app and enter public `VITE_*` env vars.
+3. Run `API_URL="https://YOUR_API_HOST" FRONTEND_URL="https://YOUR_FRONTEND_HOST" npm run smoke:prod`.

@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: underground-dj-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm run server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: APP_URL
+        sync: false
+      - key: SESSION_STORAGE_DRIVER
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AI_RATE_LIMIT_MAX
+        value: "20"
+      - key: AI_RATE_LIMIT_WINDOW_MS
+        value: "600000"
+      - key: WRITE_RATE_LIMIT_MAX
+        value: "120"
+      - key: WRITE_RATE_LIMIT_WINDOW_MS
+        value: "600000"

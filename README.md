@@ -137,6 +137,14 @@ The backend health check is available at `http://localhost:8787/api/health` and 
 
 The frontend API client uses `VITE_API_BASE_URL` when set, otherwise it defaults to `http://localhost:8787`. This value is browser-visible public configuration; never place secrets or API keys in `VITE_*` variables.
 
+The API adds an `X-Request-Id` response header to every request. If a client sends `X-Request-Id`, the server reuses it; otherwise it generates one. Runtime logs include request ID, method, path, status, and duration, but they do not log request bodies, authorization headers, API keys, or raw tokens.
+
+Graceful shutdown is enabled for `SIGTERM` and `SIGINT`. Override the default 10 second shutdown window with:
+
+```bash
+SHUTDOWN_GRACE_MS=10000
+```
+
 #### Session API
 The local API includes development-only in-memory session sharing. These sessions reset whenever the server restarts unless Supabase persistence is enabled.
 
@@ -299,6 +307,12 @@ Recommended split:
 - **Backend:** deploy the Express API to Render, Railway, Fly.io, Cloud Run, or a Node-capable server.
 - **Database:** Supabase Postgres using the migrations in `supabase/migrations/`.
 
+Included deployment templates:
+
+- `render.yaml` is a Render web-service template for the Express API. It includes secret placeholders with `sync: false`; fill those values in Render's environment settings.
+- `vercel.json` rewrites clean SPA routes such as `/sets/:id` and `/profile/:id` back to `index.html`.
+- `public/_redirects` does the same SPA fallback for Netlify-style static hosting.
+
 Backend start command:
 
 ```bash
@@ -329,6 +343,10 @@ SESSION_STORAGE_DRIVER="supabase"
 SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVER_ONLY_SUPABASE_SECRET"
 GEMINI_API_KEY="YOUR_SERVER_ONLY_GEMINI_KEY"
+AI_RATE_LIMIT_MAX=20
+AI_RATE_LIMIT_WINDOW_MS=600000
+WRITE_RATE_LIMIT_MAX=120
+WRITE_RATE_LIMIT_WINDOW_MS=600000
 ```
 
 Backend secret rules:
@@ -349,6 +367,8 @@ Before enabling Supabase persistence, run these SQL files in the Supabase SQL Ed
 ```text
 supabase/migrations/202606160001_create_dj_sessions.sql
 supabase/migrations/202606160002_create_dj_profiles.sql
+supabase/migrations/202606160003_add_user_id_to_dj_profiles.sql
+supabase/migrations/202606160004_add_ownership_to_dj_sessions.sql
 ```
 
 Pre-deploy checks:
@@ -373,6 +393,12 @@ Expected response:
   "ok": true,
   "service": "underground-dj-monolith-api"
 }
+```
+
+Full production smoke check after frontend/backend deploy:
+
+```bash
+API_URL="https://YOUR_API_HOST" FRONTEND_URL="https://YOUR_FRONTEND_HOST" npm run smoke:prod
 ```
 
 ### 5. Quality Checks

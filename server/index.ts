@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { randomUUID } from 'node:crypto';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { getAuthenticatedUser, getUserProfileId } from './auth';
 import { generateFlyerCopy } from './aiFlyerCopy';
@@ -13,6 +14,7 @@ import { sessionStorage } from './storage';
 const app = express();
 const port = Number(process.env.PORT || process.env.API_PORT || 8787);
 const frontendUrl = process.env.APP_URL || 'http://localhost:3000';
+const shutdownGraceMs = Number(process.env.SHUTDOWN_GRACE_MS || 10_000);
 
 app.set('trust proxy', 1);
 
@@ -29,6 +31,35 @@ function asyncRoute(handler: (req: Request, res: Response, next: NextFunction) =
     handler(req, res, next).catch(next);
   };
 }
+
+function getRequestId(req: Request): string {
+  const header = req.headers['x-request-id'];
+  if (typeof header === 'string' && header.trim()) return header.slice(0, 100);
+  if (Array.isArray(header) && header[0]) return header[0].slice(0, 100);
+  return randomUUID();
+}
+
+app.use((req, res, next) => {
+  const requestId = getRequestId(req);
+  const startedAt = Date.now();
+
+  res.locals.requestId = requestId;
+  res.setHeader('X-Request-Id', requestId);
+
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    console.info(JSON.stringify({
+      level: 'info',
+      requestId,
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      durationMs,
+    }));
+  });
+
+  next();
+});
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -311,17 +342,25 @@ app.post('/api/ai/flyer-copy', aiRateLimit, asyncRoute(async (req: Request, res:
 }));
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  const requestId = typeof res.locals.requestId === 'string' ? res.locals.requestId : undefined;
+
   if (isPayloadTooLargeError(err)) {
     res.status(413).json({
       error: 'Payload too large',
       detail: 'Request body must be 1 MB or smaller.',
+      requestId,
     });
     return;
   }
 
-  console.error(err);
+  console.error(JSON.stringify({
+    level: 'error',
+    requestId,
+    error: err instanceof Error ? err.message : 'Unknown error',
+  }));
   res.status(500).json({
     error: 'Internal server error',
+    requestId,
   });
 });
 
@@ -334,6 +373,28 @@ function isPayloadTooLargeError(err: unknown): boolean {
   );
 }
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Underground DJ Monolith API listening on http://localhost:${port}`);
 });
+
+function shutdown(signal: NodeJS.Signals) {
+  console.log(`Received ${signal}. Closing API server.`);
+  const forceExitTimer = setTimeout(() => {
+    console.error(`Force exiting after ${shutdownGraceMs}ms shutdown grace period.`);
+    process.exit(1);
+  }, shutdownGraceMs);
+  forceExitTimer.unref();
+
+  server.close((err) => {
+    clearTimeout(forceExitTimer);
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    console.log('API server closed.');
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
