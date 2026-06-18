@@ -411,6 +411,32 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-017: Production Smoke Route Coverage
+
+**Goal:** Make post-deploy checks catch broken public route fallbacks.
+
+**Scope:**
+- Extend the production smoke script to check both `/sets/:id` and `/profile/:id`.
+- Keep API health validation clear and JSON-specific.
+- Improve connection and HTTP failure messages.
+- Avoid any new secrets or provider-specific assumptions.
+
+**Acceptance Criteria:**
+- `npm run smoke:prod` checks frontend root, set route fallback, and profile route fallback.
+- Backend health failures explain whether the response is unreachable, invalid JSON, or missing `ok=true`.
+- Script remains usable with only `API_URL`, only `FRONTEND_URL`, or both.
+
+**Dependencies:** APP-010, APP-007.
+
+**Status:** Done.
+
+**Completed:**
+- Added profile route fallback verification to `scripts/smoke-production.mjs`.
+- Added shared SPA-shell validation for public routes.
+- Improved smoke failure messages for connection, HTTP, and JSON failures.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

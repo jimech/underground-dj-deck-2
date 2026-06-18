@@ -2,15 +2,28 @@ const apiUrl = process.env.API_URL?.replace(/\/$/, '');
 const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '');
 
 async function assertOk(name, url, validate) {
-  const response = await fetch(url);
+  let response;
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    throw new Error(`${name} failed to connect to ${url}: ${error instanceof Error ? error.message : error}`);
+  }
+
   const body = await response.text();
 
   if (!response.ok) {
-    throw new Error(`${name} failed: ${response.status} ${response.statusText}`);
+    throw new Error(`${name} failed at ${url}: ${response.status} ${response.statusText}`);
   }
 
   validate?.(response, body);
   console.log(`${name}: ok`);
+}
+
+function assertSpaShell(routeLabel, response, body) {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('text/html') || !body.includes('root')) {
+    throw new Error(`Frontend host did not serve the SPA shell for ${routeLabel}.`);
+  }
 }
 
 if (!apiUrl && !frontendUrl) {
@@ -21,7 +34,12 @@ if (!apiUrl && !frontendUrl) {
 try {
   if (apiUrl) {
     await assertOk('API health', `${apiUrl}/api/health`, (_response, body) => {
-      const parsed = JSON.parse(body);
+      let parsed;
+      try {
+        parsed = JSON.parse(body);
+      } catch {
+        throw new Error('API health response was not valid JSON.');
+      }
       if (parsed.ok !== true) throw new Error('API health response did not include ok=true.');
     });
   }
@@ -31,12 +49,13 @@ try {
       if (!body.includes('root')) throw new Error('Frontend root did not look like the Vite app shell.');
     });
 
-    await assertOk('Frontend SPA route fallback', `${frontendUrl}/sets/smoke-route`, (response, body) => {
-      const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('text/html') || !body.includes('root')) {
-        throw new Error('Frontend host did not serve the SPA shell for /sets/:id.');
-      }
-    });
+    await assertOk('Frontend set route fallback', `${frontendUrl}/sets/smoke-route`, (response, body) => (
+      assertSpaShell('/sets/:id', response, body)
+    ));
+
+    await assertOk('Frontend profile route fallback', `${frontendUrl}/profile/smoke-route`, (response, body) => (
+      assertSpaShell('/profile/:id', response, body)
+    ));
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
