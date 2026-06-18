@@ -384,6 +384,33 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-016: Production Bundle Splitting
+
+**Goal:** Reduce the initial production JavaScript chunk and make vendor code cache-friendly.
+
+**Scope:**
+- Lazy-load public profile/set pages.
+- Lazy-load the poster generator overlay.
+- Move public route parsing into a tiny shared helper.
+- Add conservative Vite vendor chunk boundaries.
+
+**Acceptance Criteria:**
+- Production build no longer emits the oversized chunk warning.
+- Studio, Account, public pages, and poster overlay remain functional.
+- No runtime behavior changes or new environment variables are required.
+
+**Dependencies:** APP-007, APP-014.
+
+**Status:** Done.
+
+**Completed:**
+- Split public pages and poster generator into separate async chunks.
+- Added explicit vendor chunks for React, motion, Supabase/Google API clients, and icons.
+- Reduced the main production app chunk to roughly 202 kB before gzip.
+- Added e2e coverage for opening the lazy-loaded poster generator.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

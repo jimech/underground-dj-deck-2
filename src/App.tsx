@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { audio } from './utils/audioEngine';
 import Turntable from './components/Turntable';
 import Mixer from './components/Mixer';
@@ -9,16 +9,24 @@ import EffectsRack from './components/EffectsRack';
 import AudioVisualizer from './components/AudioVisualizer';
 import UserProfileAndSessionManager from './components/UserProfileAndSessionManager';
 import AchievementsPanel from './components/AchievementsPanel';
-import SetPosterGenerator from './components/SetPosterGenerator';
 import { Power, Radio, Disc, Terminal, Award, Zap, Shield, Headphones, HelpCircle, Palette, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import OnboardingTour from './components/OnboardingTour';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
-import { getPublicRouteFromLocation, PublicPage } from './components/PublicPages';
+import { getPublicRouteFromLocation } from './lib/publicRoutes';
+
+const PublicPage = lazy(() => import('./components/PublicPages').then((module) => ({ default: module.PublicPage })));
+const SetPosterGenerator = lazy(() => import('./components/SetPosterGenerator'));
 
 export default function App() {
   const publicRoute = getPublicRouteFromLocation(window.location.pathname);
-  if (publicRoute) return <PublicPage route={publicRoute} />;
+  if (publicRoute) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-zinc-950 text-zinc-500 font-mono uppercase tracking-widest flex items-center justify-center">Loading public signal...</div>}>
+        <PublicPage route={publicRoute} />
+      </Suspense>
+    );
+  }
 
   return <StudioApp />;
 }
@@ -511,11 +519,13 @@ function StudioApp() {
 
       {/* High precision aesthetic set poster/flyer generator overlay */}
       {posterData.isOpen && (
-        <SetPosterGenerator 
-          defaultSessionName={posterData.sessionName}
-          defaultBpm={posterData.bpm}
-          onClose={() => setPosterData({ isOpen: false })}
-        />
+        <Suspense fallback={null}>
+          <SetPosterGenerator 
+            defaultSessionName={posterData.sessionName}
+            defaultBpm={posterData.bpm}
+            onClose={() => setPosterData({ isOpen: false })}
+          />
+        </Suspense>
       )}
 
     </div>

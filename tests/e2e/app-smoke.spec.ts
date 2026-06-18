@@ -23,6 +23,8 @@ function collectUnexpectedConsoleErrors(page: Page) {
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
+    window.localStorage.setItem('monolith_onboarding_completed', 'true');
+
     class MockAudioContext {
       currentTime = 0;
       sampleRate = 44100;
@@ -175,5 +177,17 @@ test('opens the account library from standby without powering audio', async ({ p
   await expect(page.getByText('Mounted Songs', { exact: true })).toBeVisible();
   await expect(page.getByText('Saved Mixes', { exact: true })).toBeVisible();
   await expect(page.getByText('SESSION STORAGE CABINET & MIX ARCHIVE')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('opens the lazy-loaded flyer generator from the studio cabinet', async ({ page }) => {
+  const errors = collectUnexpectedConsoleErrors(page);
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'INITIALIZE MIXING DESK' }).click();
+  await page.getByRole('button', { name: 'Flyer Maker' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Flyer Generator' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Export Flyer Image' })).toBeVisible();
   expect(errors).toEqual([]);
 });

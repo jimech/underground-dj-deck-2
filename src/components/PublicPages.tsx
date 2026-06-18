@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ArrowLeft, Disc, ExternalLink, Radio, Shield, Timer, Zap } from 'lucide-react';
 import { getPublicProfile, getPublicSet, type ApiResult, type PublicProfileResponse, type PublicSetResponse } from '../lib/apiClient';
-
-type PublicRoute =
-  | { type: 'profile'; id: string }
-  | { type: 'set'; id: string };
+import type { PublicRoute } from '../lib/publicRoutes';
 
 const avatarColors = [
   'from-orange-500 to-amber-600',
@@ -214,12 +211,4 @@ export function PublicPage({ route }: { route: PublicRoute }) {
   if (!setResult) return <LoadingPage label="Loading public set..." />;
   if (setResult.ok === false) return <ErrorPage message={getPublicError(setResult)} />;
   return <SetCard set={setResult.data.set} />;
-}
-
-export function getPublicRouteFromLocation(pathname: string): PublicRoute | null {
-  const parts = pathname.split('/').filter(Boolean);
-  if (parts.length !== 2) return null;
-  if (parts[0] === 'profile') return { type: 'profile', id: decodeURIComponent(parts[1]) };
-  if (parts[0] === 'sets') return { type: 'set', id: decodeURIComponent(parts[1]) };
-  return null;
 }
