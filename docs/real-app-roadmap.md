@@ -275,6 +275,59 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-012: Backend Middleware Unit Tests
+
+**Goal:** Lock down API reliability middleware with fast tests.
+
+**Scope:**
+- Include server tests in Vitest.
+- Test rate-limit success and rejection behavior.
+- Test request ID reuse and safe request logging.
+- Test payload-too-large error responses.
+
+**Acceptance Criteria:**
+- `npm test` covers backend middleware.
+- Tests do not need network sockets or real credentials.
+- Security-sensitive values are not asserted or logged.
+
+**Dependencies:** APP-009, APP-011.
+
+**Status:** Done.
+
+**Completed:**
+- Updated Vitest to include `server/**/*.test.ts`.
+- Added rate-limit tests for limit headers, `429`, and bearer-token bucket separation.
+- Added request telemetry tests for `X-Request-Id`, safe logs, and `413` responses.
+
+---
+
+### APP-013: Manual Deployment Checklist
+
+**Goal:** Make the remaining manual production steps explicit and safe.
+
+**Scope:**
+- Document Supabase setup order.
+- Document backend host env vars and secrets.
+- Document frontend host env vars.
+- Document post-deploy smoke checks.
+- Document pre-push secret checks.
+
+**Acceptance Criteria:**
+- Manual credential steps are clearly separated from committed code.
+- The checklist explains which values are public and which are secret.
+- The checklist includes verification steps after deploy.
+
+**Dependencies:** APP-010.
+
+**Status:** Done.
+
+**Completed:**
+- Added `docs/deployment-manual-checklist.md`.
+- Linked the checklist from the README deployment guide.
+- Included Supabase, backend, frontend, post-deploy, and push-safety steps.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

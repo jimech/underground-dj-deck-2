@@ -24,6 +24,10 @@ import { supabaseBrowserClient } from '../lib/supabaseClient';
 
 const PROFILE_ID_STORAGE_KEY = 'dj_profile_id';
 
+type UserProfileAndSessionManagerProps = {
+  mode?: 'full' | 'account';
+};
+
 function getOrCreateProfileId() {
   const existing = localStorage.getItem(PROFILE_ID_STORAGE_KEY);
   if (existing) return existing;
@@ -33,7 +37,9 @@ function getOrCreateProfileId() {
   return generated;
 }
 
-export default function UserProfileAndSessionManager() {
+export default function UserProfileAndSessionManager({ mode = 'full' }: UserProfileAndSessionManagerProps) {
+  const isAccountMode = mode === 'account';
+
   // --- DJ Profile States ---
   const [djName, setDjName] = useState('DJ Monolith');
   const [djCrew, setDjCrew] = useState('Sub-level 4');
@@ -856,7 +862,7 @@ export default function UserProfileAndSessionManager() {
     >
       
       {/* LEFT COLUMN: ACTIVE DJ PROFILE CARD (4 Cols) */}
-      <div className="md:col-span-4 bg-zinc-900 border border-zinc-850 rounded-3xl p-5 flex flex-col gap-4 relative overflow-hidden">
+      <div className={`${isAccountMode ? 'md:col-span-5 xl:col-span-4' : 'md:col-span-4'} bg-zinc-900 border border-zinc-850 rounded-3xl p-5 flex flex-col gap-4 relative overflow-hidden`}>
         {/* Glow behind profile */}
         <div className={`absolute -top-16 -left-16 w-36 h-36 rounded-full bg-gradient-to-br ${avatarColors[avatarIndex]} opacity-10 blur-xl`} />
         
@@ -1053,7 +1059,7 @@ export default function UserProfileAndSessionManager() {
       </div>
 
       {/* CENTER COLUMN: VINYL CASSETTE FILE Uploader & DECODER ZONE (4 Cols) */}
-      <div className="md:col-span-4 bg-zinc-900 border border-zinc-850 rounded-3xl p-5 flex flex-col gap-4 relative">
+      <div className={`${isAccountMode ? 'hidden' : 'md:col-span-4'} bg-zinc-900 border border-zinc-850 rounded-3xl p-5 flex flex-col gap-4 relative`}>
         <div className="flex items-center gap-2 border-b border-zinc-850 pb-3">
           <Music className="text-zinc-500 w-4 h-4" />
           <h3 className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase font-extrabold">
@@ -1186,15 +1192,16 @@ export default function UserProfileAndSessionManager() {
       </div>
 
       {/* RIGHT COLUMN: DJ CABINET / SESSION LIBRARY (4 Cols) */}
-      <div className="md:col-span-4 bg-zinc-900 border border-zinc-850 rounded-3xl p-5 flex flex-col gap-4 relative">
+      <div className={`${isAccountMode ? 'md:col-span-7 xl:col-span-8 min-h-[520px]' : 'md:col-span-4'} bg-zinc-900 border border-zinc-850 rounded-3xl p-5 flex flex-col gap-4 relative`}>
         <div className="flex items-center gap-2 border-b border-zinc-850 pb-3">
           <Save className="text-zinc-500 w-4 h-4" />
           <h3 className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase font-extrabold">
-            SESSION STORAGE CABINET & MIX ARCHIVE
+            {isAccountMode ? 'ACCOUNT LIBRARY & SAVED MIXES' : 'SESSION STORAGE CABINET & MIX ARCHIVE'}
           </h3>
         </div>
 
         {/* Save Current Session Form */}
+        {!isAccountMode && (
         <form onSubmit={saveCurrentSession} className="flex gap-1.5">
           <input 
             type="text" value={sessionName}
@@ -1220,8 +1227,10 @@ export default function UserProfileAndSessionManager() {
             <Save size={12} strokeWidth={2.5} />
           </button>
         </form>
+        )}
 
         {/* Quick Action Triggers for Session Sharing/Export */}
+        {!isAccountMode && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[8px] font-mono">
           <button
             type="button"
@@ -1272,9 +1281,10 @@ export default function UserProfileAndSessionManager() {
             <span>Flyer Maker</span>
           </button>
         </div>
+        )}
 
         {/* Collapsible Quick Share Console Panel */}
-        {isSharingOpen && (
+        {isSharingOpen && !isAccountMode && (
           <div className="bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800 flex flex-col gap-3 relative">
             <div className="flex items-center justify-between border-b border-zinc-850 pb-1.5">
               <span className="text-[8px] font-mono font-extrabold text-orange-400 uppercase tracking-widest flex items-center gap-1">
@@ -1361,6 +1371,7 @@ export default function UserProfileAndSessionManager() {
         )}
 
         {/* 6 High-Fidelity Centralized Venue Mood Preset Packs */}
+        {!isAccountMode && (
         <div className="flex flex-col gap-1.5 pt-1.5 border-t border-zinc-850/40">
           <div className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest font-extrabold flex items-center gap-1 mb-1">
             <Sparkles size={11} className="text-orange-400" />
@@ -1391,11 +1402,12 @@ export default function UserProfileAndSessionManager() {
             ))}
           </div>
         </div>
+        )}
 
         {/* Signed-in Cloud Session Library */}
-        <div className="flex flex-col gap-2 border-t border-zinc-850/60 pt-3">
+        <div className={`${isAccountMode ? 'flex-1' : ''} flex flex-col gap-2 border-t border-zinc-850/60 pt-3`}>
           <div className="flex justify-between items-center text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
-            <span>Cloud Sessions</span>
+            <span>{isAccountMode ? 'Saved Songs / Mixes' : 'Cloud Sessions'}</span>
             <button
               type="button"
               onClick={() => refreshCloudSessions(true)}
@@ -1409,16 +1421,16 @@ export default function UserProfileAndSessionManager() {
           </div>
 
           {!authUser ? (
-            <div className="py-4 px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed">
+            <div className={`${isAccountMode ? 'flex-1 flex items-center justify-center min-h-[260px]' : 'py-4'} px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed`}>
               Sign in to keep a cloud library of saved mixes.
             </div>
           ) : cloudSessions.length === 0 ? (
-            <div className="py-4 px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed">
+            <div className={`${isAccountMode ? 'flex-1 flex flex-col items-center justify-center min-h-[260px]' : 'py-4'} px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed`}>
               No cloud mixes yet.
               <span className="block text-[7px] text-zinc-650 mt-1">Click Cloud Link to save this rig to your account.</span>
             </div>
           ) : (
-            <div className="max-h-[132px] overflow-y-auto gap-2 flex flex-col pr-1">
+            <div className={`${isAccountMode ? 'max-h-[460px]' : 'max-h-[132px]'} overflow-y-auto gap-2 flex flex-col pr-1`}>
               {cloudSessions.map((cloudSession) => {
                 const isSelected = selectedSessionId === cloudSession.id;
                 const sessionNameLabel = cloudSession.session.name || 'Untitled Cloud Mix';
@@ -1503,6 +1515,7 @@ export default function UserProfileAndSessionManager() {
         </div>
 
         {/* Import JSON Trigger */}
+        {!isAccountMode && (
         <div className="flex justify-between items-center text-[9px] font-mono font-bold text-zinc-500 border-t border-zinc-850/60 pt-3">
           <span>MIX ARCHIVES CABINET</span>
           <label className="flex items-center gap-1 text-orange-400 hover:text-orange-300 cursor-pointer text-[8px] uppercase tracking-widest">
@@ -1514,8 +1527,10 @@ export default function UserProfileAndSessionManager() {
             />
           </label>
         </div>
+        )}
 
         {/* Session Inventory List */}
+        {!isAccountMode && (
         <div className="flex-1 overflow-y-auto max-h-[135px] gap-2 flex flex-col pr-1">
           {savedSessions.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center py-6 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl">
@@ -1585,6 +1600,7 @@ export default function UserProfileAndSessionManager() {
             })
           )}
         </div>
+        )}
 
         {/* Global Action Status Alert strip */}
         {statusMessage.text && (

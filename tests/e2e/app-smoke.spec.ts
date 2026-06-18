@@ -130,7 +130,14 @@ test('loads the app, initializes the desk, and renders the session cabinet', asy
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
     const text = message.text();
-    if (message.type() === 'error' && !text.includes('Failed to load resource: net::ERR_CONNECTION_REFUSED')) {
+    const isExpectedMissingFirstRunProfile = text.includes('Failed to load resource: the server responded with a status of 404')
+      && message.location().url.includes('/api/profiles/profile_');
+
+    if (
+      message.type() === 'error'
+      && !text.includes('Failed to load resource: net::ERR_CONNECTION_REFUSED')
+      && !isExpectedMissingFirstRunProfile
+    ) {
       errors.push(text);
     }
   });

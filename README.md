@@ -313,6 +313,10 @@ Included deployment templates:
 - `vercel.json` rewrites clean SPA routes such as `/sets/:id` and `/profile/:id` back to `index.html`.
 - `public/_redirects` does the same SPA fallback for Netlify-style static hosting.
 
+Manual step-by-step deployment checklist:
+
+- `docs/deployment-manual-checklist.md`
+
 Backend start command:
 
 ```bash
@@ -412,6 +416,9 @@ npm test
 # Run browser smoke tests
 npm run test:e2e
 ```
+
+The unit suite covers shared session codec behavior plus backend middleware for rate limits, request IDs, and payload-too-large errors.
+
 Porting the app to a portfolio? The static-only mode keeps the compiled output in `./dist` hostable on free static hosting. Use full-stack mode only when you want cloud persistence and AI features.
 
 ---

@@ -10,7 +10,7 @@ import AudioVisualizer from './components/AudioVisualizer';
 import UserProfileAndSessionManager from './components/UserProfileAndSessionManager';
 import AchievementsPanel from './components/AchievementsPanel';
 import SetPosterGenerator from './components/SetPosterGenerator';
-import { Power, Radio, Disc, Terminal, Award, Zap, Shield, Headphones, HelpCircle, Palette } from 'lucide-react';
+import { Power, Radio, Disc, Terminal, Award, Zap, Shield, Headphones, HelpCircle, Palette, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import OnboardingTour from './components/OnboardingTour';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
@@ -29,6 +29,7 @@ function StudioApp() {
   const [stickerText, setStickerText] = useState(audio.stickerText);
   const [posterData, setPosterData] = useState<{ isOpen: boolean; sessionName?: string; bpm?: number }>({ isOpen: false });
   const [mobileVisibleSection, setMobileVisibleSection] = useState<'all' | 'decks' | 'fx' | 'instruments' | 'profile'>('all');
+  const [activeWorkspace, setActiveWorkspace] = useState<'studio' | 'account'>('studio');
   const [theme, setTheme] = useState<'normal' | 'light' | 'dark' | '90s'>('normal');
   const [isThemeTransitioning, setIsThemeTransitioning] = useState(false);
   const [transitioningTo, setTransitioningTo] = useState<'normal' | 'light' | 'dark' | '90s' | null>(null);
@@ -154,6 +155,26 @@ function StudioApp() {
 
           {/* MASTER POWER & AUX STATS */}
           <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-1.5 bg-zinc-950/40 border border-zinc-850/60 rounded-2xl p-1.5 font-mono select-none">
+              {(['studio', 'account'] as const).map((workspace) => {
+                const active = activeWorkspace === workspace;
+                return (
+                  <button
+                    key={workspace}
+                    type="button"
+                    onClick={() => setActiveWorkspace(workspace)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[9px] font-extrabold uppercase tracking-widest transition ${
+                      active
+                        ? 'bg-cyan-500/10 border-cyan-500/50 text-cyan-300'
+                        : 'bg-zinc-900/40 border-zinc-850 text-zinc-500 hover:text-zinc-300'
+                    }`}
+                  >
+                    {workspace === 'studio' ? <Disc size={11} /> : <User size={11} />}
+                    <span>{workspace === 'studio' ? 'Studio' : 'Account'}</span>
+                  </button>
+                );
+              })}
+            </div>
             
             {/* System Status Info Table */}
             <div className="hidden xs:grid grid-cols-2 gap-x-4 gap-y-0.5 bg-zinc-950/40 border border-zinc-850/60 rounded-xl p-3 font-mono text-[10px] text-zinc-500 select-none">
@@ -236,105 +257,113 @@ function StudioApp() {
           </div>
         </div>
 
-        {/* STICKY MOBILE NAVIGATION CONTROLS (PIONEER-STYLE TACTILE PAGE SELECTOR) */}
-        <div className="lg:hidden sticky top-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/80 p-2.5 -mx-4 mb-2 flex flex-col gap-1.5 shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[8px] font-mono text-zinc-500 font-extrabold uppercase tracking-widest">TACTILE RIG MONITOR</span>
-            <span className="text-[8px] font-mono text-orange-500 font-extrabold uppercase tracking-widest animate-pulse">● CUE CHANNELS DIRECT</span>
+        {activeWorkspace === 'account' ? (
+          <div className="mt-2">
+            <UserProfileAndSessionManager mode="account" />
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x touch-pan-x">
-            {(['all', 'decks', 'fx', 'instruments', 'profile'] as const).map((sec) => {
-              const active = mobileVisibleSection === sec;
-              const labels = {
-                all: 'ALL UNITS',
-                decks: 'DECKS & MIX',
-                fx: 'TAPE MASTER & FX',
-                instruments: 'BEATS & DRUMS',
-                profile: 'CABINET & RAVES',
-              };
-              return (
-                <button
-                  key={sec}
-                  onClick={() => setMobileVisibleSection(sec)}
-                  className={`px-3.5 py-2.5 rounded-xl text-[9px] font-mono font-extrabold uppercase tracking-wider shrink-0 transition duration-150 border cursor-pointer snap-start ${
-                    active
-                      ? 'bg-orange-500/10 border-orange-500 text-orange-400 font-black shadow-[0_0_8px_rgba(249,115,22,0.15)]'
-                      : 'bg-zinc-900/60 border-zinc-800 text-zinc-500 hover:text-zinc-300'
-                  }`}
-                >
-                  {labels[sec]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        ) : (
+          <>
+            {/* STICKY MOBILE NAVIGATION CONTROLS (PIONEER-STYLE TACTILE PAGE SELECTOR) */}
+            <div className="lg:hidden sticky top-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/80 p-2.5 -mx-4 mb-2 flex flex-col gap-1.5 shadow-[0_10px_20px_rgba(0,0,0,0.5)]">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[8px] font-mono text-zinc-500 font-extrabold uppercase tracking-widest">TACTILE RIG MONITOR</span>
+                <span className="text-[8px] font-mono text-orange-500 font-extrabold uppercase tracking-widest animate-pulse">● CUE CHANNELS DIRECT</span>
+              </div>
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none snap-x touch-pan-x">
+                {(['all', 'decks', 'fx', 'instruments', 'profile'] as const).map((sec) => {
+                  const active = mobileVisibleSection === sec;
+                  const labels = {
+                    all: 'ALL UNITS',
+                    decks: 'DECKS & MIX',
+                    fx: 'TAPE MASTER & FX',
+                    instruments: 'BEATS & DRUMS',
+                    profile: 'CABINET & RAVES',
+                  };
+                  return (
+                    <button
+                      key={sec}
+                      onClick={() => setMobileVisibleSection(sec)}
+                      className={`px-3.5 py-2.5 rounded-xl text-[9px] font-mono font-extrabold uppercase tracking-wider shrink-0 transition duration-150 border cursor-pointer snap-start ${
+                        active
+                          ? 'bg-orange-500/10 border-orange-500 text-orange-400 font-black shadow-[0_0_8px_rgba(249,115,22,0.15)]'
+                          : 'bg-zinc-900/60 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                      }`}
+                    >
+                      {labels[sec]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-        {/* MAIN BENTO DECK GRID (TURNTABLES & MIXER) */}
-        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch ${
-          mobileVisibleSection === 'all' || mobileVisibleSection === 'decks' ? 'block lg:grid' : 'hidden lg:grid'
-        }`}>
-          
-          {/* DECK A PLATTEN */}
-          <div className="lg:col-span-4 flex flex-col justify-between">
-            <Turntable id="A" isActive={isPowerOn} onStateChange={() => setIsPowerOn(true)} />
-          </div>
+            {/* MAIN BENTO DECK GRID (TURNTABLES & MIXER) */}
+            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch ${
+              mobileVisibleSection === 'all' || mobileVisibleSection === 'decks' ? 'block lg:grid' : 'hidden lg:grid'
+            }`}>
+              
+              {/* DECK A PLATTEN */}
+              <div className="lg:col-span-4 flex flex-col justify-between">
+                <Turntable id="A" isActive={isPowerOn} onStateChange={() => setIsPowerOn(true)} />
+              </div>
 
-          {/* VISUAL MONITOR & EQUALIZER mixer */}
-          <div className="lg:col-span-4 flex flex-col gap-6 justify-between">
-            
-            {/* Visualizer stays on top */}
-            <AudioVisualizer />
-            
-            {/* Mixer is under the Visualizer */}
-            <Mixer />
+              {/* VISUAL MONITOR & EQUALIZER mixer */}
+              <div className="lg:col-span-4 flex flex-col gap-6 justify-between">
+                
+                {/* Visualizer stays on top */}
+                <AudioVisualizer />
+                
+                {/* Mixer is under the Visualizer */}
+                <Mixer />
 
-          </div>
+              </div>
 
-          {/* DECK B PLATTEN */}
-          <div className="lg:col-span-4 flex flex-col justify-between">
-            <Turntable id="B" isActive={isPowerOn} onStateChange={() => setIsPowerOn(true)} />
-          </div>
+              {/* DECK B PLATTEN */}
+              <div className="lg:col-span-4 flex flex-col justify-between">
+                <Turntable id="B" isActive={isPowerOn} onStateChange={() => setIsPowerOn(true)} />
+              </div>
 
-        </div>
+            </div>
 
-        {/* TAPE MASTER RECORDER DECK UNIT & KAOSS EFFECTS RACK */}
-        <div id="master-tape-and-fx-unit" className={`grid grid-cols-1 xl:grid-cols-12 gap-6 mt-1 items-stretch ${
-          mobileVisibleSection === 'all' || mobileVisibleSection === 'fx' ? 'block lg:grid' : 'hidden lg:grid'
-        }`}>
-          <div className="xl:col-span-6 h-full">
-            <TapeRecorder />
-          </div>
-          <div className="xl:col-span-6 h-full">
-            <EffectsRack />
-          </div>
-        </div>
+            {/* TAPE MASTER RECORDER DECK UNIT & KAOSS EFFECTS RACK */}
+            <div id="master-tape-and-fx-unit" className={`grid grid-cols-1 xl:grid-cols-12 gap-6 mt-1 items-stretch ${
+              mobileVisibleSection === 'all' || mobileVisibleSection === 'fx' ? 'block lg:grid' : 'hidden lg:grid'
+            }`}>
+              <div className="xl:col-span-6 h-full">
+                <TapeRecorder />
+              </div>
+              <div className="xl:col-span-6 h-full">
+                <EffectsRack />
+              </div>
+            </div>
 
-        {/* LOG SYSTEM, DIGITAL AUDIO CARTRIDGE CABINET, AND SESSION LOBBY */}
-        <div className={`${mobileVisibleSection === 'all' || mobileVisibleSection === 'profile' ? 'block' : 'hidden lg:block'}`}>
-          <UserProfileAndSessionManager />
-          
-          {/* LIVE RAVE REWARDS & CROWD LEVEL STATS */}
-          <div className="mt-6">
-            <AchievementsPanel />
-          </div>
-        </div>
+            {/* LOG SYSTEM, DIGITAL AUDIO CARTRIDGE CABINET, AND SESSION LOBBY */}
+            <div className={`${mobileVisibleSection === 'all' || mobileVisibleSection === 'profile' ? 'block' : 'hidden lg:block'}`}>
+              <UserProfileAndSessionManager />
+              
+              {/* LIVE RAVE REWARDS & CROWD LEVEL STATS */}
+              <div className="mt-6">
+                <AchievementsPanel />
+              </div>
+            </div>
 
-        {/* BOTTOM SECTION RACKS (DRUM SEQUENCER & SOUND EFFECTS PADS) */}
-        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 mt-2 items-stretch ${
-          mobileVisibleSection === 'all' || mobileVisibleSection === 'instruments' ? 'block lg:grid' : 'hidden lg:grid'
-        }`}>
-          
-          {/* DRUM MACHINE */}
-          <div className="lg:col-span-7 h-full">
-            <StepSequencer />
-          </div>
+            {/* BOTTOM SECTION RACKS (DRUM SEQUENCER & SOUND EFFECTS PADS) */}
+            <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 mt-2 items-stretch ${
+              mobileVisibleSection === 'all' || mobileVisibleSection === 'instruments' ? 'block lg:grid' : 'hidden lg:grid'
+            }`}>
+              
+              {/* DRUM MACHINE */}
+              <div className="lg:col-span-7 h-full">
+                <StepSequencer />
+              </div>
 
-          {/* MPC PAD SAMPLER */}
-          <div className="lg:col-span-5 h-full">
-            <Sampler />
-          </div>
+              {/* MPC PAD SAMPLER */}
+              <div className="lg:col-span-5 h-full">
+                <Sampler />
+              </div>
 
-        </div>
+            </div>
+          </>
+        )}
 
         {/* STATIC ANALOG WIRES & ACCENTS FOOTER */}
         <footer className="mt-8 border-t border-zinc-850 pt-6 pr-1 flex flex-col lg:flex-row items-center justify-between text-[11px] font-mono text-zinc-600 gap-4">
@@ -364,7 +393,7 @@ function StudioApp() {
 
       {/* AUTOPLAY AUDIO BLOCK DIALOG MODAL / COVER OVERLAY */}
       <AnimatePresence>
-        {!isPowerOn && (
+        {!isPowerOn && activeWorkspace === 'studio' && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -399,6 +428,15 @@ function StudioApp() {
                 className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-black font-mono font-extrabold text-xs uppercase tracking-widest transition duration-150 shadow-[0_0_15px_rgba(249,115,22,0.4)]"
               >
                 INITIALIZE MIXING DESK
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveWorkspace('account')}
+                className="w-full py-3 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-400 hover:text-black text-cyan-300 font-mono font-extrabold text-[10px] uppercase tracking-widest transition duration-150 flex items-center justify-center gap-2"
+              >
+                <User size={13} />
+                OPEN ACCOUNT / LIBRARY
               </button>
 
               <div className="text-[10px] font-mono text-zinc-650">

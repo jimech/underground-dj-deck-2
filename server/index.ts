@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import { randomUUID } from 'node:crypto';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { getAuthenticatedUser, getUserProfileId } from './auth';
 import { generateFlyerCopy } from './aiFlyerCopy';
@@ -9,6 +8,7 @@ import { getProfileValidationError } from '../shared/profileSchema';
 import { getSessionNameRequestError } from '../shared/aiSessionNameSchema';
 import { getSessionValidationError } from '../shared/sessionSchema';
 import { aiRateLimit, writeRateLimit } from './rateLimit';
+import { apiErrorHandler, requestTelemetry } from './requestTelemetry';
 import { sessionStorage } from './storage';
 
 const app = express();
@@ -32,34 +32,7 @@ function asyncRoute(handler: (req: Request, res: Response, next: NextFunction) =
   };
 }
 
-function getRequestId(req: Request): string {
-  const header = req.headers['x-request-id'];
-  if (typeof header === 'string' && header.trim()) return header.slice(0, 100);
-  if (Array.isArray(header) && header[0]) return header[0].slice(0, 100);
-  return randomUUID();
-}
-
-app.use((req, res, next) => {
-  const requestId = getRequestId(req);
-  const startedAt = Date.now();
-
-  res.locals.requestId = requestId;
-  res.setHeader('X-Request-Id', requestId);
-
-  res.on('finish', () => {
-    const durationMs = Date.now() - startedAt;
-    console.info(JSON.stringify({
-      level: 'info',
-      requestId,
-      method: req.method,
-      path: req.path,
-      status: res.statusCode,
-      durationMs,
-    }));
-  });
-
-  next();
-});
+app.use(requestTelemetry());
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -341,37 +314,7 @@ app.post('/api/ai/flyer-copy', aiRateLimit, asyncRoute(async (req: Request, res:
   res.json(result);
 }));
 
-app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  const requestId = typeof res.locals.requestId === 'string' ? res.locals.requestId : undefined;
-
-  if (isPayloadTooLargeError(err)) {
-    res.status(413).json({
-      error: 'Payload too large',
-      detail: 'Request body must be 1 MB or smaller.',
-      requestId,
-    });
-    return;
-  }
-
-  console.error(JSON.stringify({
-    level: 'error',
-    requestId,
-    error: err instanceof Error ? err.message : 'Unknown error',
-  }));
-  res.status(500).json({
-    error: 'Internal server error',
-    requestId,
-  });
-});
-
-function isPayloadTooLargeError(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'type' in err &&
-    (err as { type?: unknown }).type === 'entity.too.large'
-  );
-}
+app.use(apiErrorHandler);
 
 const server = app.listen(port, () => {
   console.log(`Underground DJ Monolith API listening on http://localhost:${port}`);

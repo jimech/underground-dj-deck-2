@@ -3,6 +3,11 @@ import type { DjProfile, DjProfileInput } from '../../shared/profileSchema';
 import type { VersionedSession } from '../../shared/sessionSchema';
 import { cloneSession, type SessionStorage, type StoredSession } from './sessionStorage';
 
+interface SupabaseStorageError {
+  code?: string;
+  message?: string;
+}
+
 interface SessionRow {
   id: string;
   user_id: string | null;
@@ -63,6 +68,7 @@ export class DatabaseSessionStorage implements SessionStorage {
       .maybeSingle<SessionRow>();
 
     if (error) {
+      if (isInvalidUuidError(error)) return null;
       throw new Error(`Failed to load Supabase session: ${error.message}`);
     }
 
@@ -97,6 +103,7 @@ export class DatabaseSessionStorage implements SessionStorage {
       .maybeSingle<SessionRow>();
 
     if (error) {
+      if (isInvalidUuidError(error)) return null;
       throw new Error(`Failed to update Supabase session: ${error.message}`);
     }
 
@@ -113,6 +120,7 @@ export class DatabaseSessionStorage implements SessionStorage {
       .maybeSingle<{ id: string }>();
 
     if (error) {
+      if (isInvalidUuidError(error)) return false;
       throw new Error(`Failed to delete Supabase session: ${error.message}`);
     }
 
@@ -179,4 +187,8 @@ export class DatabaseSessionStorage implements SessionStorage {
       vinylSpins: row.vinyl_spins,
     };
   }
+}
+
+function isInvalidUuidError(error: SupabaseStorageError): boolean {
+  return error.code === '22P02' || /invalid input syntax for type uuid/i.test(error.message || '');
 }
