@@ -328,6 +328,62 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-014: Account Library Navigation
+
+**Goal:** Make account, login/logout, saved mixes, and mounted songs easy to find.
+
+**Scope:**
+- Add a top-level Account tab separate from the studio surface.
+- Keep sign-in/sign-out and public profile actions in the Account view.
+- Show saved cloud mixes in a larger account library panel.
+- Show currently mounted local songs separately from cloud-saved mixes.
+- Keep audio files local unless a future storage ticket adds explicit upload support.
+
+**Acceptance Criteria:**
+- User can open Account without powering on the audio engine.
+- Account view shows login/logout controls clearly.
+- Account view shows saved cloud mixes and local mounted songs as separate concepts.
+- Studio controls still render and test normally.
+
+**Dependencies:** APP-001, APP-006.
+
+**Status:** Done.
+
+**Completed:**
+- Added Studio/Account workspace navigation.
+- Added an Account shortcut from the standby overlay.
+- Added account-only layout for profile, auth, saved mixes, and mounted songs.
+- Kept local uploaded songs browser-only and explicitly labeled.
+
+---
+
+### APP-015: Account Flow Smoke Test
+
+**Goal:** Prevent regressions in the new Account tab and standby shortcut.
+
+**Scope:**
+- Add an e2e smoke test for opening Account without powering audio.
+- Assert login, mounted songs, and saved mixes are visible in the account view.
+- Keep the existing studio smoke path covered.
+- Keep expected first-run anonymous profile misses out of failure noise.
+
+**Acceptance Criteria:**
+- Account can be opened from standby.
+- Account page shows auth and library surfaces.
+- Studio-only session cabinet is hidden while Account is active.
+- `npm run test:e2e` covers both Studio and Account paths.
+
+**Dependencies:** APP-014.
+
+**Status:** Done.
+
+**Completed:**
+- Added a reusable e2e console-error collector.
+- Added Account standby shortcut coverage.
+- Verified Account and Studio paths in Playwright.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

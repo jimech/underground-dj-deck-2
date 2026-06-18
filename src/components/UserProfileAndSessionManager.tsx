@@ -1200,6 +1200,56 @@ export default function UserProfileAndSessionManager({ mode = 'full' }: UserProf
           </h3>
         </div>
 
+        {isAccountMode && (
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
+              <span className="flex items-center gap-1.5">
+                <Music size={11} className="text-orange-400" />
+                Mounted Songs
+              </span>
+              <span className="text-[7px] text-zinc-650">{uploadedTracks.length} local</span>
+            </div>
+
+            {uploadedTracks.length === 0 ? (
+              <div className="py-4 px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed">
+                No songs mounted in this browser.
+                <span className="block text-[7px] text-zinc-650 mt-1">
+                  Upload audio from the Studio tab. Files stay local and are not pushed to the public repo.
+                </span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {uploadedTracks.map((track, i) => (
+                  <div
+                    key={track.id}
+                    className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-zinc-850 bg-zinc-950/45 group"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[9px] font-mono font-extrabold uppercase tracking-wide text-zinc-200 truncate">
+                          {track.name}
+                        </span>
+                        <span className="text-[7px] text-zinc-500 font-mono tracking-widest uppercase">
+                          Local deck slot {3 + i}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => ejectTrack(i)}
+                      className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-rose-400 hover:bg-rose-950/15 transition opacity-80 group-hover:opacity-100"
+                      title="Remove local song from mounted deck slots"
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Save Current Session Form */}
         {!isAccountMode && (
         <form onSubmit={saveCurrentSession} className="flex gap-1.5">
@@ -1407,7 +1457,7 @@ export default function UserProfileAndSessionManager({ mode = 'full' }: UserProf
         {/* Signed-in Cloud Session Library */}
         <div className={`${isAccountMode ? 'flex-1' : ''} flex flex-col gap-2 border-t border-zinc-850/60 pt-3`}>
           <div className="flex justify-between items-center text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">
-            <span>{isAccountMode ? 'Saved Songs / Mixes' : 'Cloud Sessions'}</span>
+            <span>{isAccountMode ? 'Saved Mixes' : 'Cloud Sessions'}</span>
             <button
               type="button"
               onClick={() => refreshCloudSessions(true)}

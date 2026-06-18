@@ -1,4 +1,25 @@
-import { expect, test } from '@playwright/test';
+import { expect, type ConsoleMessage, type Page, test } from '@playwright/test';
+
+function collectUnexpectedConsoleErrors(page: Page) {
+  const errors: string[] = [];
+
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message: ConsoleMessage) => {
+    const text = message.text();
+    const isExpectedMissingFirstRunProfile = text.includes('Failed to load resource: the server responded with a status of 404')
+      && message.location().url.includes('/api/profiles/profile_');
+
+    if (
+      message.type() === 'error'
+      && !text.includes('Failed to load resource: net::ERR_CONNECTION_REFUSED')
+      && !isExpectedMissingFirstRunProfile
+    ) {
+      errors.push(text);
+    }
+  });
+
+  return errors;
+}
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -126,21 +147,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('loads the app, initializes the desk, and renders the session cabinet', async ({ page }) => {
-  const errors: string[] = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  page.on('console', (message) => {
-    const text = message.text();
-    const isExpectedMissingFirstRunProfile = text.includes('Failed to load resource: the server responded with a status of 404')
-      && message.location().url.includes('/api/profiles/profile_');
-
-    if (
-      message.type() === 'error'
-      && !text.includes('Failed to load resource: net::ERR_CONNECTION_REFUSED')
-      && !isExpectedMissingFirstRunProfile
-    ) {
-      errors.push(text);
-    }
-  });
+  const errors = collectUnexpectedConsoleErrors(page);
 
   await page.goto('/');
 
@@ -150,5 +157,23 @@ test('loads the app, initializes the desk, and renders the session cabinet', asy
   await expect(page.getByRole('heading', { name: /Underground DJ Monolith/i })).toBeVisible();
   await expect(page.getByText('SESSION STORAGE CABINET & MIX ARCHIVE')).toBeVisible();
   await expect(page.getByPlaceholder('NAME CURRENT MIX...')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('opens the account library from standby without powering audio', async ({ page }) => {
+  const errors = collectUnexpectedConsoleErrors(page);
+
+  await page.goto('/');
+
+  await expect(page.getByRole('heading', { name: 'CONSOLE STANDBY' })).toBeVisible();
+  await page.getByRole('button', { name: 'OPEN ACCOUNT / LIBRARY' }).click();
+
+  await expect(page.getByRole('heading', { name: 'CONSOLE STANDBY' })).toBeHidden();
+  await expect(page.getByText('ACCOUNT LIBRARY & SAVED MIXES')).toBeVisible();
+  await expect(page.getByText('ACCOUNT LINK')).toBeVisible();
+  await expect(page.getByPlaceholder('EMAIL FOR MAGIC LINK')).toBeVisible();
+  await expect(page.getByText('Mounted Songs', { exact: true })).toBeVisible();
+  await expect(page.getByText('Saved Mixes', { exact: true })).toBeVisible();
+  await expect(page.getByText('SESSION STORAGE CABINET & MIX ARCHIVE')).toBeHidden();
   expect(errors).toEqual([]);
 });

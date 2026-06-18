@@ -202,6 +202,8 @@ Signed-in users also get an account-scoped cloud library. These routes require a
 - `PUT /api/sessions/:id` renames/updates an owned session payload.
 - `DELETE /api/sessions/:id` deletes an owned session.
 
+The app includes a dedicated Account tab for sign-in/sign-out, public profile links, saved cloud mixes, and currently mounted local songs. Uploaded audio files are decoded in the browser and stay local to the current session; they are not uploaded to Supabase or committed to the repository.
+
 Public set pages use clean browser URLs like `/sets/:id`. The matching API endpoint is `GET /api/public/sets/:id`; it only returns sessions marked `public`, so private cloud sessions are not exposed.
 
 #### Profile API
