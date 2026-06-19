@@ -7,6 +7,7 @@ import { getFlyerCopyRequestError } from '../shared/aiFlyerCopySchema';
 import { getProfileValidationError } from '../shared/profileSchema';
 import { getSessionNameRequestError } from '../shared/aiSessionNameSchema';
 import { getSessionValidationError } from '../shared/sessionSchema';
+import { isAllowedOrigin } from './cors';
 import { aiRateLimit, writeRateLimit } from './rateLimit';
 import { apiErrorHandler, requestTelemetry } from './requestTelemetry';
 import { sessionStorage } from './storage';
@@ -38,11 +39,7 @@ app.use(express.json({ limit: '1mb' }));
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (
-    origin === 'http://localhost:3000' ||
-    origin === 'http://127.0.0.1:3000' ||
-    origin === frontendUrl
-  ) {
+  if (isAllowedOrigin(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
   }

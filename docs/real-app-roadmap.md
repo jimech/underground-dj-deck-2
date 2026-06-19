@@ -584,6 +584,34 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-024: Multi-Origin API CORS Allowlist
+
+**Goal:** Support local, preview, staging, and production frontend origins without opening API CORS to every site.
+
+**Scope:**
+- Add a reusable CORS allowlist helper.
+- Keep localhost origins enabled for development.
+- Allow `APP_URL` plus optional comma-separated `CORS_ALLOWED_ORIGINS`.
+- Add unit coverage for allowed, normalized, and rejected origins.
+- Document the optional deployment variable.
+
+**Acceptance Criteria:**
+- Backend CORS still allows local development.
+- Production can allow multiple explicit frontend origins.
+- Unknown origins are not wildcard-allowed.
+- No secrets or credentials are required.
+
+**Dependencies:** APP-010, APP-011.
+
+**Status:** Done.
+
+**Completed:**
+- Added `server/cors.ts` and unit tests.
+- Updated API middleware to use the allowlist helper.
+- Documented `CORS_ALLOWED_ORIGINS` in env and deployment docs.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

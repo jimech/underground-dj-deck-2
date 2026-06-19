@@ -345,6 +345,7 @@ Required backend environment variables:
 
 ```bash
 APP_URL="https://YOUR_FRONTEND_HOST"
+CORS_ALLOWED_ORIGINS="https://YOUR_PREVIEW_FRONTEND_HOST"
 SESSION_STORAGE_DRIVER="supabase"
 SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVER_ONLY_SUPABASE_SECRET"
@@ -361,6 +362,7 @@ Backend secret rules:
 - Never commit `.env`.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` or `GEMINI_API_KEY` in frontend code.
 - Never prefix backend secrets with `VITE_`.
+- `CORS_ALLOWED_ORIGINS` is optional and can contain comma-separated extra frontend origins; do not use `*` for this public app.
 
 Auth setup:
 

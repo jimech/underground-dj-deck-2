@@ -39,6 +39,7 @@ Backend environment variables:
 
 ```bash
 APP_URL="https://YOUR_FRONTEND_HOST"
+CORS_ALLOWED_ORIGINS="https://YOUR_PREVIEW_FRONTEND_HOST"
 SESSION_STORAGE_DRIVER="supabase"
 SUPABASE_URL="https://YOUR_PROJECT_REF.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVER_ONLY_SUPABASE_SECRET"
@@ -53,6 +54,7 @@ SHUTDOWN_GRACE_MS=10000
 Manual credential notes:
 
 - `SUPABASE_SERVICE_ROLE_KEY` is required for Supabase persistence on the backend.
+- `CORS_ALLOWED_ORIGINS` is optional. Use it only for extra preview/staging frontend URLs beyond `APP_URL`.
 - `GEMINI_API_KEY` is optional for local fallback behavior, but needed for real AI copy/name generation.
 - If you do not want AI yet, leave `GEMINI_API_KEY` unset and the app will still run with fallbacks.
 
