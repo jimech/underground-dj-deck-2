@@ -10,7 +10,7 @@ import { getSessionValidationError } from '../shared/sessionSchema';
 import { isAllowedOrigin } from './cors';
 import { aiRateLimit, writeRateLimit } from './rateLimit';
 import { apiErrorHandler, requestTelemetry } from './requestTelemetry';
-import { sessionStorage } from './storage';
+import { sessionStorage, sessionStorageStatus } from './storage';
 
 const app = express();
 const port = Number(process.env.PORT || process.env.API_PORT || 8787);
@@ -56,6 +56,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     ok: true,
     service: 'underground-dj-monolith-api',
+    storage: sessionStorageStatus,
   });
 });
 

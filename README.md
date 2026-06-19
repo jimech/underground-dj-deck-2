@@ -396,9 +396,16 @@ Expected response:
 ```json
 {
   "ok": true,
-  "service": "underground-dj-monolith-api"
+  "service": "underground-dj-monolith-api",
+  "storage": {
+    "configuredDriver": "supabase",
+    "activeDriver": "supabase",
+    "persistent": true
+  }
 }
 ```
+
+For a production Supabase deploy, confirm `storage.activeDriver` is `supabase` and `storage.persistent` is `true`. If the active driver is `memory`, the backend is missing Supabase server credentials or `SESSION_STORAGE_DRIVER` is not set to `supabase`.
 
 Full production smoke check after frontend/backend deploy:
 

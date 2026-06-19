@@ -41,6 +41,7 @@ try {
         throw new Error('API health response was not valid JSON.');
       }
       if (parsed.ok !== true) throw new Error('API health response did not include ok=true.');
+      if (!parsed.storage?.activeDriver) throw new Error('API health response did not include storage.activeDriver.');
     });
   }
 

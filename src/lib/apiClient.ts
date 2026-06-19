@@ -25,6 +25,11 @@ export type ApiResult<T> = ApiSuccess<T> | ApiFailure;
 export interface HealthResponse {
   ok: true;
   service: string;
+  storage?: {
+    configuredDriver: 'memory' | 'supabase';
+    activeDriver: 'memory' | 'supabase';
+    persistent: boolean;
+  };
 }
 
 export interface SessionResponse {

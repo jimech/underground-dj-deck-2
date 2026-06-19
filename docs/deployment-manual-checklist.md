@@ -33,7 +33,7 @@ Manual steps:
 - Use `render.yaml` as the service blueprint if Render detects it.
 - Set the backend environment variables in Render, not in git.
 - Deploy the service.
-- Open `https://YOUR_API_HOST/api/health` and confirm it returns `ok: true`.
+- Open `https://YOUR_API_HOST/api/health` and confirm it returns `ok: true`, `storage.activeDriver: "supabase"`, and `storage.persistent: true`.
 
 Backend environment variables:
 

@@ -612,6 +612,33 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-025: Storage-Aware API Health
+
+**Goal:** Make production health checks reveal whether the backend is using persistent Supabase storage or memory fallback.
+
+**Scope:**
+- Add non-sensitive storage runtime metadata.
+- Include storage status in `/api/health`.
+- Make production smoke validation require `storage.activeDriver`.
+- Document the expected Supabase production health response.
+
+**Acceptance Criteria:**
+- Health response includes configured driver, active driver, and persistence flag.
+- No credentials, URLs, or service keys are exposed.
+- Production smoke catches malformed health payloads.
+- Docs explain how to spot accidental memory fallback.
+
+**Dependencies:** APP-008, APP-010, APP-024.
+
+**Status:** Done.
+
+**Completed:**
+- Added storage runtime status.
+- Updated `/api/health` and API client health typing.
+- Updated smoke and deployment docs.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:
