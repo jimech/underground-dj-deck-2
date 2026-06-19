@@ -89,6 +89,7 @@ Manual credential notes:
 Run local checks before pushing:
 
 ```bash
+npm run secret:scan
 npm run lint
 npm test
 npm run test:e2e
@@ -115,10 +116,10 @@ Manual browser checks:
 Before pushing public code:
 
 - Run `git status --short` and make sure `.env` is not listed.
-- Search for accidental secrets:
+- Scan tracked and untracked repository files for accidental secrets:
 
 ```bash
-git diff | rg "(SUPABASE_SERVICE_ROLE_KEY|GEMINI_API_KEY|AIza|sk-|eyJ)"
+npm run secret:scan
 ```
 
-Only placeholders like `YOUR_SERVER_ONLY_SUPABASE_SECRET` should appear.
+Only placeholders like `YOUR_SERVER_ONLY_SUPABASE_SECRET` should appear in committed files.

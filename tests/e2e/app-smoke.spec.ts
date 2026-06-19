@@ -210,3 +210,83 @@ test('renders lazy public route shells for profiles and sets', async ({ page }) 
   await expect(page).toHaveTitle('Public Set Not Found | Underground DJ Monolith');
   expect(errors).toEqual([]);
 });
+
+test('renders public profile and set pages from API data', async ({ page }) => {
+  const errors = collectUnexpectedConsoleErrors(page);
+  const publicProfile = {
+    id: 'profile-smoke',
+    djName: 'DJ Smoke',
+    djCrew: 'Route Test Crew',
+    soundStyle: 'Industrial Dub',
+    avatarIndex: 2,
+    timeMixed: 5400,
+    vinylSpins: 2048,
+  };
+  const publicSession = {
+    version: 1,
+    name: 'Warehouse Smoke Test',
+    timestamp: Date.now(),
+    data: {
+      bpm: 138,
+      crossfaderValue: 0,
+      deckAValues: { vol: 0.7, low: 0, mid: 0, high: 0, filter: 0 },
+      deckBValues: { vol: 0.7, low: 0, mid: 0, high: 0, filter: 0 },
+      swingAmountValue: 0,
+      flangerValue: 0,
+      deckSelectedTracks: { A: 0, B: 0 },
+      deckPlayStates: { A: false, B: false },
+      deckReversed: { A: false, B: false },
+      effectsVinylCrackleActive: false,
+      effectsVinylCrackleVolume: 0.25,
+      effectsVinylCrackleFreq: 1000,
+      effectsVinylCrackleQ: 1,
+      ambientMode: 'drone',
+      visualizerMode: 'bars',
+      stickerText: 'PUBLIC TEST',
+      sequencerTracks: {
+        kick: [true, false, false, false],
+        snare: [false, false, true, false],
+        hihat: [false, true, false, true],
+        synth: [false, false, false, false],
+      },
+    },
+  };
+
+  await page.route('http://localhost:8787/api/public/profiles/profile-smoke', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ profile: publicProfile }),
+    });
+  });
+  await page.route('http://localhost:8787/api/public/sets/set-smoke', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        set: {
+          id: 'set-smoke',
+          publicUrl: 'http://127.0.0.1:3000/sets/set-smoke',
+          shareUrl: 'http://127.0.0.1:3000/?sessionId=set-smoke',
+          createdAt: '2026-06-19T00:00:00.000Z',
+          session: publicSession,
+          profile: publicProfile,
+        },
+      }),
+    });
+  });
+
+  await page.goto('/profile/profile-smoke');
+  await expect(page.getByRole('heading', { name: 'DJ Smoke' })).toBeVisible();
+  await expect(page.getByText('Route Test Crew / Industrial Dub')).toBeVisible();
+  await expect(page.getByText('1h 30m')).toBeVisible();
+  await expect(page).toHaveTitle('DJ Smoke | Underground DJ Profile');
+
+  await page.goto('/sets/set-smoke');
+  await expect(page.getByText('Public Set Transmission')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Warehouse Smoke Test' }).first()).toBeVisible();
+  await expect(page.getByText('DJ Smoke')).toBeVisible();
+  await expect(page.getByText('BPM').first().locator('..').getByText('138')).toBeVisible();
+  await expect(page).toHaveTitle('Warehouse Smoke Test | Underground DJ Set');
+  expect(errors).toEqual([]);
+});

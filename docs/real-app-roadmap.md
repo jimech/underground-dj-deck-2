@@ -487,6 +487,55 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-020: Public Route Success Smoke Test
+
+**Goal:** Verify public profile and set pages render real public API data, not only not-found states.
+
+**Scope:**
+- Mock public profile and public set API responses in Playwright.
+- Assert profile metadata, set metadata, BPM, operator, and browser titles render.
+- Keep the test independent of Supabase and the local API server.
+
+**Acceptance Criteria:**
+- Public profile success page renders profile name, crew/style, stats, and title.
+- Public set success page renders set title, BPM, operator, and title.
+- Tests stay deterministic without network credentials.
+
+**Dependencies:** APP-018, APP-019.
+
+**Status:** Done.
+
+**Completed:**
+- Added mocked public API success coverage for `/profile/:id` and `/sets/:id`.
+- Verified public page success titles in Playwright.
+
+---
+
+### APP-021: Repository Secret Scan
+
+**Goal:** Add a repeatable pre-push safety check for public repository secrets.
+
+**Scope:**
+- Add a local scanner for tracked and untracked repository files.
+- Flag common high-risk formats like provider keys, private keys, database URLs with passwords, and Supabase service-role JWTs.
+- Document the scanner in pre-deploy and push-safety checklists.
+
+**Acceptance Criteria:**
+- `npm run secret:scan` exits successfully when only placeholders are present.
+- Real-looking backend secrets fail the scan before push.
+- The scanner does not require real credentials or network access.
+
+**Dependencies:** APP-013, APP-015.
+
+**Status:** Done.
+
+**Completed:**
+- Added `scripts/scan-secrets.mjs`.
+- Added `npm run secret:scan`.
+- Updated README and deployment checklist safety steps.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:
