@@ -183,6 +183,12 @@ export function PublicPage({ route }: { route: PublicRoute }) {
   const [setResult, setSetResult] = useState<ApiResult<PublicSetResponse> | null>(null);
 
   useEffect(() => {
+    document.title = route.type === 'profile'
+      ? 'Loading Public Profile | Underground DJ Monolith'
+      : 'Loading Public Set | Underground DJ Monolith';
+  }, [route.id, route.type]);
+
+  useEffect(() => {
     let isMounted = true;
     setProfileResult(null);
     setSetResult(null);
@@ -201,6 +207,22 @@ export function PublicPage({ route }: { route: PublicRoute }) {
       isMounted = false;
     };
   }, [route.id, route.type]);
+
+  useEffect(() => {
+    if (route.type !== 'profile' || !profileResult) return;
+
+    document.title = profileResult.ok
+      ? `${profileResult.data.profile.djName} | Underground DJ Profile`
+      : 'Public Profile Not Found | Underground DJ Monolith';
+  }, [profileResult, route.type]);
+
+  useEffect(() => {
+    if (route.type !== 'set' || !setResult) return;
+
+    document.title = setResult.ok
+      ? `${setResult.data.set.session.name || 'Public Set'} | Underground DJ Set`
+      : 'Public Set Not Found | Underground DJ Monolith';
+  }, [route.type, setResult]);
 
   if (route.type === 'profile') {
     if (!profileResult) return <LoadingPage label="Loading public profile..." />;

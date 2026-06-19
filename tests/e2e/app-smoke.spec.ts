@@ -8,10 +8,12 @@ function collectUnexpectedConsoleErrors(page: Page) {
     const text = message.text();
     const isExpectedMissingFirstRunProfile = text.includes('Failed to load resource: the server responded with a status of 404')
       && message.location().url.includes('/api/profiles/profile_');
+    const isExpectedMissingLocalApi = text.includes('Failed to load resource: net::ERR_CONNECTION_REFUSED')
+      && message.location().url.includes('localhost:8787/api/');
 
     if (
       message.type() === 'error'
-      && !text.includes('Failed to load resource: net::ERR_CONNECTION_REFUSED')
+      && !isExpectedMissingLocalApi
       && !isExpectedMissingFirstRunProfile
     ) {
       errors.push(text);
@@ -159,6 +161,7 @@ test('loads the app, initializes the desk, and renders the session cabinet', asy
   await expect(page.getByRole('heading', { name: /Underground DJ Monolith/i })).toBeVisible();
   await expect(page.getByText('SESSION STORAGE CABINET & MIX ARCHIVE')).toBeVisible();
   await expect(page.getByPlaceholder('NAME CURRENT MIX...')).toBeVisible();
+  await expect(page).toHaveTitle('Studio | Underground DJ Monolith');
   expect(errors).toEqual([]);
 });
 
@@ -177,6 +180,7 @@ test('opens the account library from standby without powering audio', async ({ p
   await expect(page.getByText('Mounted Songs', { exact: true })).toBeVisible();
   await expect(page.getByText('Saved Mixes', { exact: true })).toBeVisible();
   await expect(page.getByText('SESSION STORAGE CABINET & MIX ARCHIVE')).toBeHidden();
+  await expect(page).toHaveTitle('Account Library | Underground DJ Monolith');
   expect(errors).toEqual([]);
 });
 
@@ -189,5 +193,20 @@ test('opens the lazy-loaded flyer generator from the studio cabinet', async ({ p
 
   await expect(page.getByRole('heading', { name: 'Flyer Generator' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Export Flyer Image' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('renders lazy public route shells for profiles and sets', async ({ page }) => {
+  const errors = collectUnexpectedConsoleErrors(page);
+
+  await page.goto('/profile/smoke-route');
+  await expect(page.getByRole('link', { name: 'Studio' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Signal Not Found' })).toBeVisible();
+  await expect(page).toHaveTitle('Public Profile Not Found | Underground DJ Monolith');
+
+  await page.goto('/sets/smoke-route');
+  await expect(page.getByRole('link', { name: 'Studio' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Signal Not Found' })).toBeVisible();
+  await expect(page).toHaveTitle('Public Set Not Found | Underground DJ Monolith');
   expect(errors).toEqual([]);
 });

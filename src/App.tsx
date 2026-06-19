@@ -42,6 +42,12 @@ function StudioApp() {
   const [isThemeTransitioning, setIsThemeTransitioning] = useState(false);
   const [transitioningTo, setTransitioningTo] = useState<'normal' | 'light' | 'dark' | '90s' | null>(null);
 
+  useEffect(() => {
+    document.title = activeWorkspace === 'account'
+      ? 'Account Library | Underground DJ Monolith'
+      : 'Studio | Underground DJ Monolith';
+  }, [activeWorkspace]);
+
   // Load and apply initial theme
   useEffect(() => {
     const savedTheme = localStorage.getItem('dj_theme') as 'normal' | 'light' | 'dark' | '90s';

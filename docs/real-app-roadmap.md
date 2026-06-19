@@ -437,6 +437,56 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-018: Public Route Browser Smoke Test
+
+**Goal:** Keep clean public profile and set routes working after route and bundle changes.
+
+**Scope:**
+- Add e2e coverage for `/profile/:id` and `/sets/:id`.
+- Verify the lazy-loaded public page shell renders on both routes.
+- Allow expected local API connection failures in the browser-only e2e environment.
+
+**Acceptance Criteria:**
+- Browser tests cover public profile and public set route entry points.
+- Public route failures render the in-app `Signal Not Found` state instead of crashing.
+- Existing Studio, Account, and flyer smoke paths still pass.
+
+**Dependencies:** APP-007, APP-016, APP-017.
+
+**Status:** Done.
+
+**Completed:**
+- Added public route shell coverage to Playwright smoke tests.
+- Narrowed expected local API connection noise to `localhost:8787/api/*`.
+
+---
+
+### APP-019: Browser Title Metadata
+
+**Goal:** Replace generic app titles with useful route-aware browser titles.
+
+**Scope:**
+- Set the static HTML title to the app name.
+- Set Studio and Account workspace titles.
+- Set loading, success, and not-found titles for public profile and set routes.
+- Add e2e assertions for important title states.
+
+**Acceptance Criteria:**
+- Browser tabs no longer show the default template title.
+- Account and Studio titles are distinct.
+- Public routes expose meaningful titles even when the public API is unavailable.
+
+**Dependencies:** APP-014, APP-018.
+
+**Status:** Done.
+
+**Completed:**
+- Updated `index.html` title.
+- Added workspace and public-route document title effects.
+- Added Playwright title assertions for Studio, Account, and public not-found routes.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:
