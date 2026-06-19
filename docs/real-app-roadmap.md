@@ -536,6 +536,30 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-022: CI Secret Scan Gate
+
+**Goal:** Make GitHub CI block accidental public secret leaks.
+
+**Scope:**
+- Run the repository secret scan in GitHub Actions.
+- Put the scan before browser install, tests, and build so failures are fast.
+- Keep CI free of real credentials.
+
+**Acceptance Criteria:**
+- Push/PR checks run `npm run secret:scan`.
+- Secret scan failures stop the workflow before expensive checks.
+- No new manual credentials are required.
+
+**Dependencies:** APP-008, APP-021.
+
+**Status:** Done.
+
+**Completed:**
+- Added a CI secret-scan step after `npm ci`.
+- Updated the CI job label to include secret scanning.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

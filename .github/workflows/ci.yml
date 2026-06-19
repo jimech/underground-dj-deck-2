@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   checks:
-    name: Typecheck, test, build, and smoke
+    name: Secret scan, typecheck, test, build, and smoke
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -29,6 +29,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Secret scan
+        run: npm run secret:scan
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
