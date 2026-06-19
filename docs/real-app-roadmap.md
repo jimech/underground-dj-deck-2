@@ -639,6 +639,32 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-026: Production Smoke Storage Expectation
+
+**Goal:** Let the post-deploy smoke check fail when production accidentally runs memory storage.
+
+**Scope:**
+- Add optional `EXPECT_STORAGE_DRIVER` validation to `npm run smoke:prod`.
+- Require `storage.persistent: true` when Supabase is expected.
+- Update deployment docs to use the stricter production smoke command.
+
+**Acceptance Criteria:**
+- Smoke checks still work without an expected driver.
+- Production docs show the Supabase expectation.
+- A deployed API using memory fallback fails the stricter smoke check.
+- No credentials are required.
+
+**Dependencies:** APP-025.
+
+**Status:** Done.
+
+**Completed:**
+- Added storage-driver expectation validation to `scripts/smoke-production.mjs`.
+- Added focused smoke health validation tests.
+- Updated README and deployment checklist smoke commands.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

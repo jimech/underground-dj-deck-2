@@ -1,5 +1,17 @@
 const apiUrl = process.env.API_URL?.replace(/\/$/, '');
 const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '');
+const expectedStorageDriver = process.env.EXPECT_STORAGE_DRIVER;
+
+export function validateApiHealthPayload(parsed, expectedDriver) {
+  if (parsed.ok !== true) throw new Error('API health response did not include ok=true.');
+  if (!parsed.storage?.activeDriver) throw new Error('API health response did not include storage.activeDriver.');
+  if (expectedDriver && parsed.storage.activeDriver !== expectedDriver) {
+    throw new Error(`API health storage.activeDriver was "${parsed.storage.activeDriver}", expected "${expectedDriver}".`);
+  }
+  if (expectedDriver === 'supabase' && parsed.storage.persistent !== true) {
+    throw new Error('API health storage.persistent was not true for expected Supabase storage.');
+  }
+}
 
 async function assertOk(name, url, validate) {
   let response;
@@ -26,12 +38,11 @@ function assertSpaShell(routeLabel, response, body) {
   }
 }
 
-if (!apiUrl && !frontendUrl) {
-  console.error('Set API_URL and/or FRONTEND_URL before running this smoke check.');
-  process.exit(1);
-}
+async function runSmoke() {
+  if (!apiUrl && !frontendUrl) {
+    throw new Error('Set API_URL and/or FRONTEND_URL before running this smoke check.');
+  }
 
-try {
   if (apiUrl) {
     await assertOk('API health', `${apiUrl}/api/health`, (_response, body) => {
       let parsed;
@@ -40,8 +51,7 @@ try {
       } catch {
         throw new Error('API health response was not valid JSON.');
       }
-      if (parsed.ok !== true) throw new Error('API health response did not include ok=true.');
-      if (!parsed.storage?.activeDriver) throw new Error('API health response did not include storage.activeDriver.');
+      validateApiHealthPayload(parsed, expectedStorageDriver);
     });
   }
 
@@ -58,7 +68,13 @@ try {
       assertSpaShell('/profile/:id', response, body)
     ));
   }
-} catch (error) {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  try {
+    await runSmoke();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
 }

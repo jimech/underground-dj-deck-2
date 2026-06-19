@@ -410,7 +410,7 @@ For a production Supabase deploy, confirm `storage.activeDriver` is `supabase` a
 Full production smoke check after frontend/backend deploy:
 
 ```bash
-API_URL="https://YOUR_API_HOST" FRONTEND_URL="https://YOUR_FRONTEND_HOST" npm run smoke:prod
+API_URL="https://YOUR_API_HOST" FRONTEND_URL="https://YOUR_FRONTEND_HOST" EXPECT_STORAGE_DRIVER="supabase" npm run smoke:prod
 ```
 
 ### 5. Quality Checks
