@@ -560,6 +560,30 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-023: One-Command Local Verification
+
+**Goal:** Make the local pre-push check easy to run and hard to forget.
+
+**Scope:**
+- Add a single npm script for secret scan, typecheck, unit tests, build, and e2e smoke tests.
+- Update README and deployment checklist to prefer the one-command flow.
+- Keep individual scripts available for focused debugging.
+
+**Acceptance Criteria:**
+- `npm run verify` runs all local pre-push checks in order.
+- Documentation points to `npm run verify` for normal push readiness.
+- No new credentials or external services are required.
+
+**Dependencies:** APP-015, APP-016, APP-021.
+
+**Status:** Done.
+
+**Completed:**
+- Added `npm run verify`.
+- Updated README and deployment checklist verification instructions.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "secret:scan": "node scripts/scan-secrets.mjs",
+    "verify": "npm run secret:scan && npm run lint && npm test && npm run build && npm run test:e2e",
     "smoke:prod": "node scripts/smoke-production.mjs"
   },
   "dependencies": {

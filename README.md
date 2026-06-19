@@ -380,11 +380,7 @@ supabase/migrations/202606160004_add_ownership_to_dj_sessions.sql
 Pre-deploy checks:
 
 ```bash
-npm run secret:scan
-npm run lint
-npm test
-npm run test:e2e
-npm run build
+npm run verify
 ```
 
 Health check after backend deploy:
@@ -410,6 +406,9 @@ API_URL="https://YOUR_API_HOST" FRONTEND_URL="https://YOUR_FRONTEND_HOST" npm ru
 
 ### 5. Quality Checks
 ```bash
+# Run the full local pre-push verification suite
+npm run verify
+
 # Scan tracked and untracked repository files for common secret formats
 npm run secret:scan
 

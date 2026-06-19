@@ -89,11 +89,7 @@ Manual credential notes:
 Run local checks before pushing:
 
 ```bash
-npm run secret:scan
-npm run lint
-npm test
-npm run test:e2e
-npm run build
+npm run verify
 ```
 
 After backend/frontend deploy:
