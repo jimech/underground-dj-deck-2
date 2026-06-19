@@ -26,6 +26,7 @@ const PROFILE_ID_STORAGE_KEY = 'dj_profile_id';
 
 type UserProfileAndSessionManagerProps = {
   mode?: 'full' | 'account';
+  onOpenStudio?: () => void;
 };
 
 function getOrCreateProfileId() {
@@ -37,7 +38,7 @@ function getOrCreateProfileId() {
   return generated;
 }
 
-export default function UserProfileAndSessionManager({ mode = 'full' }: UserProfileAndSessionManagerProps) {
+export default function UserProfileAndSessionManager({ mode = 'full', onOpenStudio }: UserProfileAndSessionManagerProps) {
   const isAccountMode = mode === 'account';
 
   // --- DJ Profile States ---
@@ -304,6 +305,10 @@ export default function UserProfileAndSessionManager({ mode = 'full' }: UserProf
 
     await navigator.clipboard.writeText(publicUrl);
     triggerAlert('Public profile link copied.', 'success');
+  };
+
+  const openStudioWorkspace = () => {
+    onOpenStudio?.();
   };
 
   const refreshCloudSessions = async (showAlert = false) => {
@@ -964,7 +969,7 @@ export default function UserProfileAndSessionManager({ mode = 'full' }: UserProf
           <div className="bg-zinc-950/40 p-3 rounded-xl border border-zinc-850/60 flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[8px] font-mono tracking-widest text-zinc-500 uppercase font-bold">
-                ACCOUNT LINK
+                {isAccountMode ? 'ACCOUNT & CLOUD SYNC' : 'ACCOUNT LINK'}
               </span>
               <span className={`text-[7px] font-mono uppercase tracking-widest font-extrabold ${
                 authUser ? 'text-emerald-400' : 'text-zinc-500'
@@ -978,6 +983,11 @@ export default function UserProfileAndSessionManager({ mode = 'full' }: UserProf
                 <span className="text-[10px] font-mono text-zinc-300 truncate">
                   {authUser.email || authUser.id}
                 </span>
+                {isAccountMode && (
+                  <span className="text-[8px] text-emerald-300/80 font-mono leading-relaxed uppercase tracking-wider">
+                    Cloud mixes, profile edits, and public set links are connected to this account.
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={signOut}
@@ -996,6 +1006,11 @@ export default function UserProfileAndSessionManager({ mode = 'full' }: UserProf
               </div>
             ) : (
               <form onSubmit={requestMagicLink} className="flex flex-col gap-2">
+                {isAccountMode && (
+                  <span className="text-[8px] text-zinc-500 font-mono leading-relaxed uppercase tracking-wider">
+                    Sign in to sync saved mixes. The email link returns to this account library.
+                  </span>
+                )}
                 <input
                   type="email"
                   value={authEmail}
@@ -1199,6 +1214,25 @@ export default function UserProfileAndSessionManager({ mode = 'full' }: UserProf
             {isAccountMode ? 'ACCOUNT LIBRARY & SAVED MIXES' : 'SESSION STORAGE CABINET & MIX ARCHIVE'}
           </h3>
         </div>
+
+        {isAccountMode && (
+          <div className="grid grid-cols-3 gap-2 rounded-2xl border border-zinc-850 bg-zinc-950/35 p-2.5">
+            <div className="min-w-0">
+              <span className="block text-[7px] font-mono font-extrabold uppercase tracking-widest text-zinc-600">Cloud Mixes</span>
+              <span className="mt-1 block text-sm font-mono font-black text-cyan-300">{cloudSessions.length}</span>
+            </div>
+            <div className="min-w-0">
+              <span className="block text-[7px] font-mono font-extrabold uppercase tracking-widest text-zinc-600">Mounted Songs</span>
+              <span className="mt-1 block text-sm font-mono font-black text-orange-300">{uploadedTracks.length}</span>
+            </div>
+            <div className="min-w-0">
+              <span className="block text-[7px] font-mono font-extrabold uppercase tracking-widest text-zinc-600">Storage</span>
+              <span className={`mt-1 block text-[10px] font-mono font-black uppercase ${authUser ? 'text-emerald-300' : 'text-zinc-400'}`}>
+                {authUser ? 'Cloud' : 'Local'}
+              </span>
+            </div>
+          </div>
+        )}
 
         {isAccountMode && (
           <div className="flex flex-col gap-2">
@@ -1471,13 +1505,35 @@ export default function UserProfileAndSessionManager({ mode = 'full' }: UserProf
           </div>
 
           {!authUser ? (
-            <div className={`${isAccountMode ? 'flex-1 flex items-center justify-center min-h-[260px]' : 'py-4'} px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed`}>
+            <div className={`${isAccountMode ? 'flex-1 flex flex-col items-center justify-center min-h-[260px]' : 'py-4'} px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed`}>
               Sign in to keep a cloud library of saved mixes.
+              {isAccountMode && (
+                <button
+                  type="button"
+                  onClick={openStudioWorkspace}
+                  className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-xl border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-[8px] font-mono font-extrabold uppercase tracking-widest text-orange-300 hover:bg-orange-500 hover:text-black transition"
+                >
+                  <Disc size={10} />
+                  Open Studio
+                  <ArrowRight size={10} />
+                </button>
+              )}
             </div>
           ) : cloudSessions.length === 0 ? (
             <div className={`${isAccountMode ? 'flex-1 flex flex-col items-center justify-center min-h-[260px]' : 'py-4'} px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed`}>
               No cloud mixes yet.
-              <span className="block text-[7px] text-zinc-650 mt-1">Click Cloud Link to save this rig to your account.</span>
+              <span className="block text-[7px] text-zinc-650 mt-1">Create a set in Studio, then save it as a cloud link.</span>
+              {isAccountMode && (
+                <button
+                  type="button"
+                  onClick={openStudioWorkspace}
+                  className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-xl border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-[8px] font-mono font-extrabold uppercase tracking-widest text-orange-300 hover:bg-orange-500 hover:text-black transition"
+                >
+                  <Disc size={10} />
+                  Open Studio
+                  <ArrowRight size={10} />
+                </button>
+              )}
             </div>
           ) : (
             <div className={`${isAccountMode ? 'max-h-[460px]' : 'max-h-[132px]'} overflow-y-auto gap-2 flex flex-col pr-1`}>

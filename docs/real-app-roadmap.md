@@ -665,6 +665,33 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-027: Account Library UX Polish
+
+**Goal:** Make the Account workspace easier to understand as a profile, sign-in, songs, and saved-mixes hub.
+
+**Scope:**
+- Add a compact Account summary for cloud mixes, mounted songs, and active storage mode.
+- Clarify the magic-link sign-in copy and signed-in cloud sync state.
+- Replace the confusing empty saved-mixes instruction with an actionable Studio shortcut.
+- Cover the Account shortcut in browser smoke tests.
+
+**Acceptance Criteria:**
+- Account view explains local vs cloud state at a glance.
+- Empty saved mixes state points users to Studio without hunting for the right control.
+- The Studio shortcut returns to the standby Studio view.
+- Existing Account and Studio smoke paths still pass.
+
+**Dependencies:** APP-014, APP-015, APP-023.
+
+**Status:** Done.
+
+**Completed:**
+- Added Account summary metrics.
+- Added clearer sign-in and cloud-sync helper text.
+- Added an `Open Studio` empty-state action and e2e coverage.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

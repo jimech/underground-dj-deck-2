@@ -8,6 +8,8 @@ function collectUnexpectedConsoleErrors(page: Page) {
     const text = message.text();
     const isExpectedMissingFirstRunProfile = text.includes('Failed to load resource: the server responded with a status of 404')
       && message.location().url.includes('/api/profiles/profile_');
+    const isExpectedMissingPublicRoute = text.includes('Failed to load resource: the server responded with a status of 404')
+      && message.location().url.includes('/api/public/');
     const isExpectedMissingLocalApi = text.includes('Failed to load resource: net::ERR_CONNECTION_REFUSED')
       && message.location().url.includes('localhost:8787/api/');
 
@@ -15,6 +17,7 @@ function collectUnexpectedConsoleErrors(page: Page) {
       message.type() === 'error'
       && !isExpectedMissingLocalApi
       && !isExpectedMissingFirstRunProfile
+      && !isExpectedMissingPublicRoute
     ) {
       errors.push(text);
     }
@@ -175,12 +178,17 @@ test('opens the account library from standby without powering audio', async ({ p
 
   await expect(page.getByRole('heading', { name: 'CONSOLE STANDBY' })).toBeHidden();
   await expect(page.getByText('ACCOUNT LIBRARY & SAVED MIXES')).toBeVisible();
-  await expect(page.getByText('ACCOUNT LINK')).toBeVisible();
+  await expect(page.getByText('ACCOUNT & CLOUD SYNC')).toBeVisible();
   await expect(page.getByPlaceholder('EMAIL FOR MAGIC LINK')).toBeVisible();
-  await expect(page.getByText('Mounted Songs', { exact: true })).toBeVisible();
+  await expect(page.getByText('No songs mounted in this browser.')).toBeVisible();
   await expect(page.getByText('Saved Mixes', { exact: true })).toBeVisible();
+  await expect(page.getByText('Cloud Mixes', { exact: true })).toBeVisible();
   await expect(page.getByText('SESSION STORAGE CABINET & MIX ARCHIVE')).toBeHidden();
   await expect(page).toHaveTitle('Account Library | Underground DJ Monolith');
+  await expect(page.getByRole('button', { name: 'Open Studio' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open Studio' }).click();
+  await expect(page.getByRole('heading', { name: 'CONSOLE STANDBY' })).toBeVisible();
+  await expect(page).toHaveTitle('Studio | Underground DJ Monolith');
   expect(errors).toEqual([]);
 });
 

@@ -273,7 +273,7 @@ function StudioApp() {
 
         {activeWorkspace === 'account' ? (
           <div className="mt-2">
-            <UserProfileAndSessionManager mode="account" />
+            <UserProfileAndSessionManager mode="account" onOpenStudio={() => setActiveWorkspace('studio')} />
           </div>
         ) : (
           <>
