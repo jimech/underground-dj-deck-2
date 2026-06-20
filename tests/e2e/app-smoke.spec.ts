@@ -156,6 +156,27 @@ test.beforeEach(async ({ page }) => {
 test('loads the app, initializes the desk, and renders the session cabinet', async ({ page }) => {
   const errors = collectUnexpectedConsoleErrors(page);
 
+  await page.route('http://localhost:8787/api/sessions', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+
+    const session = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'cloud-smoke-link',
+        shareUrl: 'http://127.0.0.1:3000/?sessionId=cloud-smoke-link',
+        publicUrl: 'http://127.0.0.1:3000/sets/cloud-smoke-link',
+        createdAt: '2026-06-20T00:00:00.000Z',
+        visibility: 'public',
+        session,
+      }),
+    });
+  });
+
   await page.goto('/');
 
   await expect(page.getByRole('heading', { name: 'CONSOLE STANDBY' })).toBeVisible();
@@ -177,15 +198,29 @@ test('loads the app, initializes the desk, and renders the session cabinet', asy
   await expect(page.getByText('Cloud Save Mode')).toBeVisible();
   await expect(page.getByText('Public Link Only')).toBeVisible();
   await expect(page.getByText('Save Cloud creates a public set link. Sign in from Account to keep mixes in your library.')).toBeVisible();
+  await page.getByRole('button', { name: 'Open Account' }).click();
+  await expect(page.getByText('ACCOUNT LIBRARY & SAVED MIXES')).toBeVisible();
+  await expect(page).toHaveTitle('Account Library | Underground DJ Monolith');
+  await page.getByRole('button', { name: 'Studio', exact: true }).click();
+  await expect(page.getByText('SESSION STORAGE CABINET & MIX ARCHIVE')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Name' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save Local' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save Cloud' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Save Cloud Public Link/i })).toBeVisible();
   await page.getByRole('button', { name: 'Save Local' }).click();
   await expect(page.getByRole('status')).toContainText(/successfully locked to browser safe/i);
+  await page.getByRole('button', { name: 'Dismiss message' }).click();
+  await page.getByRole('button', { name: /Save Cloud Public Link/i }).click();
+  await expect(page.getByRole('status')).toContainText(/public set link copied|cloud set link created/i);
   await page.getByRole('button', { name: 'Dismiss message' }).click();
   await page.getByRole('button', { name: 'Offline Share' }).click();
   await expect(page.getByText('OFFLINE SHARE TOOLS')).toBeVisible();
   await expect(page.getByText('Use Save Cloud for public set pages and account library storage.')).toBeVisible();
+  await expect(page.getByText('Latest Cloud Links:')).toBeVisible();
+  await expect(page.getByText('Public Set Page', { exact: true })).toBeVisible();
+  await expect(page.locator('input[value="http://127.0.0.1:3000/sets/cloud-smoke-link"]')).toBeVisible();
+  await expect(page.getByText('Studio Load Link')).toBeVisible();
+  await expect(page.locator('input[value="http://127.0.0.1:3000/?sessionId=cloud-smoke-link"]')).toBeVisible();
   await expect(page).toHaveTitle('Studio | Underground DJ Monolith');
   expect(errors).toEqual([]);
 });

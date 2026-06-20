@@ -26,6 +26,7 @@ const PROFILE_ID_STORAGE_KEY = 'dj_profile_id';
 
 type UserProfileAndSessionManagerProps = {
   mode?: 'full' | 'account';
+  onOpenAccount?: () => void;
   onOpenStudio?: () => void;
   onOpenPoster?: (detail: { sessionName?: string; bpm?: number }) => void;
 };
@@ -39,7 +40,7 @@ function getOrCreateProfileId() {
   return generated;
 }
 
-export default function UserProfileAndSessionManager({ mode = 'full', onOpenStudio, onOpenPoster }: UserProfileAndSessionManagerProps) {
+export default function UserProfileAndSessionManager({ mode = 'full', onOpenAccount, onOpenStudio, onOpenPoster }: UserProfileAndSessionManagerProps) {
   const isAccountMode = mode === 'account';
 
   // --- DJ Profile States ---
@@ -86,6 +87,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
   const [copiedShareLink, setCopiedShareLink] = useState(false);
   const [isCloudSaving, setIsCloudSaving] = useState(false);
   const [lastCloudShareUrl, setLastCloudShareUrl] = useState('');
+  const [lastCloudPublicUrl, setLastCloudPublicUrl] = useState('');
   const [isGeneratingSessionName, setIsGeneratingSessionName] = useState(false);
   const [cloudSessions, setCloudSessions] = useState<SessionResponse[]>([]);
   const [isCloudLibraryLoading, setIsCloudLibraryLoading] = useState(false);
@@ -599,6 +601,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
       }
 
       setLastCloudShareUrl(result.data.shareUrl);
+      setLastCloudPublicUrl(result.data.publicUrl || result.data.shareUrl);
       setCloudSessions((current) => [result.data, ...current.filter((session) => session.id !== result.data.id)]);
       try {
         await navigator.clipboard.writeText(result.data.publicUrl || result.data.shareUrl);
@@ -660,6 +663,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
 
           loadSession(result.data.session);
           setLastCloudShareUrl(result.data.shareUrl);
+          setLastCloudPublicUrl(result.data.publicUrl || result.data.shareUrl);
           setTimeout(() => {
             triggerAlert(`Connected cloud performance URL: "${result.data.session.name}"!`, 'success');
           }, 500);
@@ -1327,10 +1331,21 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
                 {cloudSaveMode}
               </span>
             </div>
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
               <span className="text-[8px] font-mono leading-relaxed uppercase tracking-wider text-zinc-500">
                 {cloudSaveHint}
               </span>
+              {!authUser && onOpenAccount && (
+                <button
+                  type="button"
+                  onClick={onOpenAccount}
+                  className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg border border-cyan-500/35 bg-cyan-500/10 px-2.5 py-1.5 text-[7.5px] font-mono font-extrabold uppercase tracking-widest text-cyan-300 hover:bg-cyan-400 hover:text-black transition"
+                >
+                  <User size={10} />
+                  Open Account
+                  <ArrowRight size={10} />
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1399,11 +1414,20 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
             type="button"
             onClick={saveCurrentSessionToCloud}
             disabled={isCloudSaving}
-            className="py-2 px-1.5 rounded-xl border border-zinc-800 bg-zinc-950/40 hover:bg-zinc-950 text-zinc-300 hover:text-cyan-300 hover:border-cyan-700/70 transition duration-150 cursor-pointer flex items-center justify-center gap-1 font-extrabold uppercase select-none text-[7.5px] disabled:opacity-50 disabled:cursor-wait"
-            title="Save current rig to the local API and copy a short cloud link"
+            className={`py-2 px-1.5 rounded-xl border transition duration-150 cursor-pointer flex items-center justify-center gap-1 font-extrabold uppercase select-none text-[7.5px] disabled:opacity-50 disabled:cursor-wait ${
+              authUser
+                ? 'border-cyan-500/35 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-400 hover:text-black'
+                : 'border-amber-500/35 bg-amber-500/10 text-amber-200 hover:bg-amber-400 hover:text-black'
+            }`}
+            title={authUser ? 'Save to your account library and copy a public set page link' : 'Create a public set page link without adding it to an account library'}
           >
-            <ExternalLink size={10} className={isCloudSaving ? 'text-cyan-300 animate-pulse' : 'text-cyan-400'} />
-            <span>{isCloudSaving ? 'Saving...' : 'Save Cloud'}</span>
+            <ExternalLink size={10} className={isCloudSaving ? 'animate-pulse' : ''} />
+            <span className="flex flex-col leading-none items-start">
+              <span>{isCloudSaving ? 'Saving...' : 'Save Cloud'}</span>
+              <span className="mt-0.5 text-[6.5px] opacity-70 tracking-wider">
+                {authUser ? 'Library Save' : 'Public Link'}
+              </span>
+            </span>
           </button>
 
           <button
@@ -1463,26 +1487,53 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
             </div>
 
             {lastCloudShareUrl && (
-              <div className="flex flex-col gap-1.5 border-t border-zinc-900 pt-2.5">
-                <span className="text-[7.5px] font-mono text-zinc-500 uppercase tracking-wider font-extrabold">Latest Cloud Studio Link:</span>
-                <div className="flex gap-1.5">
-                  <input
-                    type="text"
-                    readOnly
-                    value={lastCloudShareUrl}
-                    className="flex-1 bg-zinc-950 text-cyan-200 font-mono text-[8px] rounded-lg border border-zinc-800 py-1.5 px-2 outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(lastCloudShareUrl);
-                      triggerAlert('Latest cloud link copied.', 'success');
-                    }}
-                    className="px-2.5 py-1.5 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-400 hover:text-black hover:font-bold border border-cyan-500/30 rounded-lg text-[8px] font-mono uppercase transition cursor-pointer"
-                    title="Copy latest saved cloud link"
-                  >
-                    Copy
-                  </button>
+              <div className="flex flex-col gap-2 border-t border-zinc-900 pt-2.5">
+                <span className="text-[7.5px] font-mono text-zinc-500 uppercase tracking-wider font-extrabold">Latest Cloud Links:</span>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-[7px] font-mono text-cyan-300 uppercase tracking-widest font-extrabold">Public Set Page</span>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      readOnly
+                      value={lastCloudPublicUrl || lastCloudShareUrl}
+                      className="flex-1 bg-zinc-950 text-cyan-200 font-mono text-[8px] rounded-lg border border-zinc-800 py-1.5 px-2 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(lastCloudPublicUrl || lastCloudShareUrl);
+                        triggerAlert('Public set page link copied.', 'success');
+                      }}
+                      className="px-2.5 py-1.5 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-400 hover:text-black hover:font-bold border border-cyan-500/30 rounded-lg text-[8px] font-mono uppercase transition cursor-pointer"
+                      title="Copy public set page link"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-[7px] font-mono text-zinc-500 uppercase tracking-widest font-extrabold">Studio Load Link</span>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      readOnly
+                      value={lastCloudShareUrl}
+                      className="flex-1 bg-zinc-950 text-zinc-300 font-mono text-[8px] rounded-lg border border-zinc-800 py-1.5 px-2 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(lastCloudShareUrl);
+                        triggerAlert('Studio load link copied.', 'success');
+                      }}
+                      className="px-2.5 py-1.5 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white border border-zinc-800 rounded-lg text-[8px] font-mono uppercase transition cursor-pointer"
+                      title="Copy studio load link"
+                    >
+                      Copy
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1610,6 +1661,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
                       loadSession(cloudSession.session);
                       setSelectedSessionId(cloudSession.id);
                       setLastCloudShareUrl(cloudSession.shareUrl);
+                      setLastCloudPublicUrl(cloudSession.publicUrl || cloudSession.shareUrl);
                     }}
                     className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border cursor-pointer transition-all duration-150 group ${
                       isSelected
@@ -1657,6 +1709,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
                           e.stopPropagation();
                           await navigator.clipboard.writeText(cloudSession.publicUrl || cloudSession.shareUrl);
                           setLastCloudShareUrl(cloudSession.shareUrl);
+                          setLastCloudPublicUrl(cloudSession.publicUrl || cloudSession.shareUrl);
                           triggerAlert('Public set link copied.', 'success');
                         }}
                         className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-cyan-300 hover:bg-cyan-950/15 transition"

@@ -875,6 +875,86 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-035: Cloud Save Button State
+
+**Goal:** Make the `Save Cloud` command itself reflect whether the user is saving to an account library or creating a public link only.
+
+**Scope:**
+- Add an auth-aware sublabel inside the `Save Cloud` button.
+- Use a distinct unsigned visual state for public-link-only saves.
+- Keep existing cloud-save behavior unchanged.
+- Cover the unsigned button state in browser smoke tests.
+
+**Acceptance Criteria:**
+- Signed-out Studio shows `Save Cloud` with a `Public Link` sublabel.
+- Signed-in Studio can show the same command as an account-library save.
+- Users get the warning at the exact click target, not only in nearby helper copy.
+- Existing Studio, Account, flyer, and public-route smoke tests pass.
+
+**Dependencies:** APP-034.
+
+**Status:** Done.
+
+**Completed:**
+- Added auth-aware `Save Cloud` button styling and sublabel copy.
+- Added e2e coverage for the signed-out `Public Link` state.
+
+---
+
+### APP-036: Cloud Link Labels
+
+**Goal:** Make saved cloud links easier to understand after a successful `Save Cloud`.
+
+**Scope:**
+- Store both the public set page URL and the Studio load URL in the share panel state.
+- Label the two links separately as `Public Set Page` and `Studio Load Link`.
+- Copy the right URL from each link row.
+- Cover the successful cloud-save share panel in browser smoke tests with mocked API data.
+
+**Acceptance Criteria:**
+- A successful cloud save shows the public set page URL in the share panel.
+- The Studio load URL remains available but is not confused with the public page.
+- Selecting or copying cloud library items refreshes the latest public link state.
+- Existing Studio, Account, flyer, and public-route smoke tests pass.
+
+**Dependencies:** APP-029, APP-035.
+
+**Status:** Done.
+
+**Completed:**
+- Added separate latest cloud public URL and studio URL state.
+- Reworked the share panel to display clearly labeled cloud links.
+- Added e2e coverage for mocked cloud save link labels.
+
+---
+
+### APP-037: Studio Account CTA
+
+**Goal:** Give signed-out Studio users a direct path to Account sign-in from the cloud-save explanation.
+
+**Scope:**
+- Add an `Open Account` action to the Studio cloud-save readiness strip.
+- Wire the Studio session manager to switch the app workspace to Account.
+- Keep the CTA hidden when already signed in.
+- Cover the Studio-to-Account-to-Studio path in browser smoke tests.
+
+**Acceptance Criteria:**
+- Signed-out users can open Account from the Studio cloud-save strip.
+- The Account view shows the sign-in/library surface.
+- Users can return to Studio and continue the save/share flow.
+- Existing Studio, Account, flyer, and public-route smoke tests pass.
+
+**Dependencies:** APP-034, APP-036.
+
+**Status:** Done.
+
+**Completed:**
+- Added `onOpenAccount` workspace callback support to the session manager.
+- Added an `Open Account` CTA in the Studio cloud-save readiness strip.
+- Added e2e coverage for opening Account from Studio and returning.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

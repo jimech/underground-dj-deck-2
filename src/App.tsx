@@ -368,7 +368,10 @@ function StudioApp() {
 
             {/* LOG SYSTEM, DIGITAL AUDIO CARTRIDGE CABINET, AND SESSION LOBBY */}
             <div className={`${mobileVisibleSection === 'all' || mobileVisibleSection === 'profile' ? 'block' : 'hidden lg:block'}`}>
-              <UserProfileAndSessionManager onOpenPoster={openPosterGenerator} />
+              <UserProfileAndSessionManager
+                onOpenAccount={() => setActiveWorkspace('account')}
+                onOpenPoster={openPosterGenerator}
+              />
               
               {/* LIVE RAVE REWARDS & CROWD LEVEL STATS */}
               <div className="mt-6">
