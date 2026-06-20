@@ -27,6 +27,7 @@ const PROFILE_ID_STORAGE_KEY = 'dj_profile_id';
 type UserProfileAndSessionManagerProps = {
   mode?: 'full' | 'account';
   onOpenStudio?: () => void;
+  onOpenPoster?: (detail: { sessionName?: string; bpm?: number }) => void;
 };
 
 function getOrCreateProfileId() {
@@ -38,7 +39,7 @@ function getOrCreateProfileId() {
   return generated;
 }
 
-export default function UserProfileAndSessionManager({ mode = 'full', onOpenStudio }: UserProfileAndSessionManagerProps) {
+export default function UserProfileAndSessionManager({ mode = 'full', onOpenStudio, onOpenPoster }: UserProfileAndSessionManagerProps) {
   const isAccountMode = mode === 'account';
 
   // --- DJ Profile States ---
@@ -79,6 +80,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
   const [savedSessions, setSavedSessions] = useState<Array<{ id: string; name: string; timestamp: number; data: any }>>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState({ text: '', type: 'info' as 'info' | 'success' | 'error' });
+  const statusTimeoutRef = useRef<number | null>(null);
   const [pastedShareCode, setPastedShareCode] = useState('');
   const [isSharingOpen, setIsSharingOpen] = useState(false);
   const [copiedShareLink, setCopiedShareLink] = useState(false);
@@ -283,10 +285,23 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
   };
 
   const triggerAlert = (text: string, type: 'info' | 'success' | 'error') => {
+    if (statusTimeoutRef.current) {
+      window.clearTimeout(statusTimeoutRef.current);
+    }
+
     setStatusMessage({ text, type });
-    setTimeout(() => {
+    statusTimeoutRef.current = window.setTimeout(() => {
       setStatusMessage({ text: '', type: 'info' });
+      statusTimeoutRef.current = null;
     }, 4000);
+  };
+
+  const clearStatusMessage = () => {
+    if (statusTimeoutRef.current) {
+      window.clearTimeout(statusTimeoutRef.current);
+      statusTimeoutRef.current = null;
+    }
+    setStatusMessage({ text: '', type: 'info' });
   };
 
   const getPublicProfileUrl = () => {
@@ -310,6 +325,20 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
   const openStudioWorkspace = () => {
     onOpenStudio?.();
   };
+
+  const openPosterGenerator = (detail: { sessionName?: string; bpm?: number }) => {
+    if (onOpenPoster) {
+      onOpenPoster(detail);
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent('open-poster-generator', { detail }));
+  };
+
+  const cloudSaveMode = authUser ? 'Account Library' : 'Public Link Only';
+  const cloudSaveHint = authUser
+    ? 'Save Cloud adds this mix to Saved Mixes and copies a public set page link.'
+    : 'Save Cloud creates a public set link. Sign in from Account to keep mixes in your library.';
 
   const refreshCloudSessions = async (showAlert = false) => {
     if (!authUser) {
@@ -1284,9 +1313,31 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
           </div>
         )}
 
+        {!isAccountMode && (
+          <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] px-3 py-2.5 flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[7.5px] font-mono font-extrabold uppercase tracking-widest text-zinc-500">
+                Cloud Save Mode
+              </span>
+              <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[7px] font-mono font-extrabold uppercase tracking-widest ${
+                authUser
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                  : 'border-cyan-500/25 bg-cyan-500/10 text-cyan-300'
+              }`}>
+                {cloudSaveMode}
+              </span>
+            </div>
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-[8px] font-mono leading-relaxed uppercase tracking-wider text-zinc-500">
+                {cloudSaveHint}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Save Current Session Form */}
         {!isAccountMode && (
-        <form onSubmit={saveCurrentSession} className="flex gap-1.5">
+        <form onSubmit={saveCurrentSession} className="flex flex-col sm:flex-row gap-1.5">
           <input 
             type="text" value={sessionName}
             maxLength={26}
@@ -1294,22 +1345,26 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
             className="flex-1 bg-zinc-950 text-white font-mono text-[10px] font-bold uppercase rounded-xl border border-zinc-850 py-2 px-3 focus:border-orange-500 outline-none"
             placeholder="NAME CURRENT MIX..."
           />
-          <button
-            type="button"
-            onClick={generateAiSessionName}
-            disabled={isGeneratingSessionName}
-            className="px-3.5 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/40 hover:bg-cyan-400 hover:text-black transition duration-150 text-cyan-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-wait"
-            title="Generate a session name from BPM, style, ambient mode, and sequencer density"
-          >
-            <Sparkles size={12} strokeWidth={2.5} className={isGeneratingSessionName ? 'animate-pulse' : ''} />
-          </button>
-          <button 
-            type="submit"
-            className="px-3.5 py-2 rounded-xl bg-orange-500/10 border border-orange-500/40 hover:bg-orange-500 hover:text-black transition duration-150 text-orange-400 flex items-center justify-center"
-            title="Lock current sliders and grids to browser safe"
-          >
-            <Save size={12} strokeWidth={2.5} />
-          </button>
+          <div className="grid grid-cols-2 gap-1.5 sm:flex sm:shrink-0">
+            <button
+              type="button"
+              onClick={generateAiSessionName}
+              disabled={isGeneratingSessionName}
+              className="px-3 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/40 hover:bg-cyan-400 hover:text-black transition duration-150 text-cyan-300 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-wait"
+              title="Generate a session name from BPM, style, ambient mode, and sequencer density"
+            >
+              <Sparkles size={12} strokeWidth={2.5} className={isGeneratingSessionName ? 'animate-pulse' : ''} />
+              <span className="text-[8px] font-mono font-extrabold uppercase tracking-widest">Name</span>
+            </button>
+            <button
+              type="submit"
+              className="px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/40 hover:bg-orange-500 hover:text-black transition duration-150 text-orange-400 flex items-center justify-center gap-1.5"
+              title="Lock current sliders and grids to browser safe"
+            >
+              <Save size={12} strokeWidth={2.5} />
+              <span className="text-[8px] font-mono font-extrabold uppercase tracking-widest">Save Local</span>
+            </button>
+          </div>
         </form>
         )}
 
@@ -1334,10 +1389,10 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
                 ? 'border-orange-500 bg-orange-500/10 text-orange-400' 
                 : 'border-zinc-800 bg-zinc-950/40 hover:bg-zinc-950 text-zinc-300 hover:text-orange-400 hover:border-zinc-700'
             }`}
-            title="Open real-time share code & URL links generator console"
+            title="Open offline share code and browser URL tools"
           >
             <Share2 size={10} className={isSharingOpen ? 'text-orange-400 animate-pulse' : 'text-orange-500'} />
-            <span>Share Link</span>
+            <span>Offline Share</span>
           </button>
 
           <button
@@ -1348,15 +1403,13 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
             title="Save current rig to the local API and copy a short cloud link"
           >
             <ExternalLink size={10} className={isCloudSaving ? 'text-cyan-300 animate-pulse' : 'text-cyan-400'} />
-            <span>{isCloudSaving ? 'Saving...' : 'Cloud Link'}</span>
+            <span>{isCloudSaving ? 'Saving...' : 'Save Cloud'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => {
-              window.dispatchEvent(new CustomEvent('open-poster-generator', {
-                detail: { sessionName: sessionName || 'Live Improvisation', bpm: audio.bpm }
-              }));
+              openPosterGenerator({ sessionName: sessionName || 'Live Improvisation', bpm: audio.bpm });
             }}
             className="py-2 px-1.5 rounded-xl border border-zinc-800 bg-zinc-950/40 hover:bg-zinc-950 text-zinc-300 hover:text-orange-400 hover:border-zinc-700 transition duration-150 cursor-pointer flex items-center justify-center gap-1 font-extrabold uppercase select-none text-[7.5px]"
             title="Generate custom vintage rave club flyer poster"
@@ -1372,7 +1425,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
           <div className="bg-zinc-950/80 p-3 rounded-2xl border border-zinc-800 flex flex-col gap-3 relative">
             <div className="flex items-center justify-between border-b border-zinc-850 pb-1.5">
               <span className="text-[8px] font-mono font-extrabold text-orange-400 uppercase tracking-widest flex items-center gap-1">
-                <Code size={10} /> LIVE SHARING PROTOCOL
+                <Code size={10} /> OFFLINE SHARE TOOLS
               </span>
               <button 
                 type="button" 
@@ -1385,7 +1438,10 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
 
             {/* Gen/Copy Section */}
             <div className="flex flex-col gap-1.5">
-              <span className="text-[7.5px] font-mono text-zinc-500 uppercase tracking-wider font-extrabold">Generate Performance Share Link:</span>
+              <span className="text-[7.5px] font-mono text-zinc-500 uppercase tracking-wider font-extrabold">Browser-only share, no account required:</span>
+              <span className="text-[7px] font-mono text-zinc-650 uppercase tracking-wider leading-relaxed">
+                Use these for temporary rig snapshots. Use Save Cloud for public set pages and account library storage.
+              </span>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
@@ -1428,6 +1484,12 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
                     Copy
                   </button>
                 </div>
+              </div>
+            )}
+
+            {!lastCloudShareUrl && (
+              <div className="border-t border-zinc-900 pt-2.5 text-[7px] font-mono text-zinc-650 uppercase tracking-wider leading-relaxed">
+                No cloud link yet. Click Save Cloud to create a public set page and add this mix to your saved cloud library.
               </div>
             )}
 
@@ -1522,7 +1584,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
           ) : cloudSessions.length === 0 ? (
             <div className={`${isAccountMode ? 'flex-1 flex flex-col items-center justify-center min-h-[260px]' : 'py-4'} px-3 text-center text-[8px] font-mono text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-850 rounded-2xl leading-relaxed`}>
               No cloud mixes yet.
-              <span className="block text-[7px] text-zinc-650 mt-1">Create a set in Studio, then save it as a cloud link.</span>
+              <span className="block text-[7px] text-zinc-650 mt-1">Create a set in Studio, then use Save Cloud.</span>
               {isAccountMode && (
                 <button
                   type="button"
@@ -1582,9 +1644,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.dispatchEvent(new CustomEvent('open-poster-generator', {
-                            detail: { sessionName: sessionNameLabel, bpm: cloudSession.session.data?.bpm || audio.bpm }
-                          }));
+                          openPosterGenerator({ sessionName: sessionNameLabel, bpm: cloudSession.session.data?.bpm || audio.bpm });
                         }}
                         className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-orange-400 hover:bg-orange-950/15 transition"
                         title="Generate club poster flyer"
@@ -1677,9 +1737,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.dispatchEvent(new CustomEvent('open-poster-generator', {
-                          detail: { sessionName: session.name, bpm: session.data?.bpm || audio.bpm }
-                        }));
+                        openPosterGenerator({ sessionName: session.name, bpm: session.data?.bpm || audio.bpm });
                       }}
                       className="p-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-orange-400 hover:bg-orange-950/15 transition"
                       title="Generate club poster flyer"
@@ -1708,17 +1766,32 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenStud
         </div>
         )}
 
-        {/* Global Action Status Alert strip */}
+        {/* Global Action Status Toast */}
         {statusMessage.text && (
-          <div className={`absolute bottom-3 left-3 right-3 p-2 rounded-xl text-[8px] font-mono font-bold tracking-widest text-center border uppercase flex items-center justify-center gap-1.5 shadow-md ${
+          <div
+            role="status"
+            aria-live="polite"
+            className={`fixed left-4 right-4 bottom-4 z-[80] mx-auto max-w-xl p-3 rounded-2xl text-[9px] font-mono font-bold tracking-widest border uppercase flex items-center justify-between gap-3 shadow-2xl shadow-black/70 ${
             statusMessage.type === 'success' 
               ? 'bg-emerald-950/80 border-emerald-500 text-emerald-400' 
               : statusMessage.type === 'error'
               ? 'bg-rose-950/80 border-rose-500 text-rose-400'
               : 'bg-zinc-950/90 border-zinc-800 text-zinc-300'
-          }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping" />
-            <span>{statusMessage.text}</span>
+          }`}
+          >
+            <span className="flex items-center justify-center gap-2 text-center flex-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping shrink-0" />
+              <span>{statusMessage.text}</span>
+            </span>
+            <button
+              type="button"
+              onClick={clearStatusMessage}
+              className="rounded-lg border border-current/20 p-1 text-current/80 hover:text-current hover:bg-white/5 transition"
+              title="Dismiss message"
+              aria-label="Dismiss message"
+            >
+              <X size={12} />
+            </button>
           </div>
         )}
       </div>

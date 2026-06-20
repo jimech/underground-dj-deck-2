@@ -692,6 +692,189 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-028: Studio Save Action Clarity
+
+**Goal:** Make the main Studio save/share controls easier to understand at a glance.
+
+**Scope:**
+- Replace icon-only session name generation and local-save controls with visible command labels.
+- Rename the cloud-save command from `Cloud Link` to `Save Cloud`.
+- Keep existing local save, cloud save, share, export, and flyer behavior unchanged.
+- Open the flyer generator through direct React state from the session manager instead of a browser event.
+- Cover the renamed controls in browser smoke tests.
+
+**Acceptance Criteria:**
+- Studio shows distinct `Name`, `Save Local`, and `Save Cloud` commands.
+- The controls remain usable on narrow layouts.
+- Account empty state points to the same `Save Cloud` wording.
+- Existing Studio and Account smoke tests pass.
+
+**Dependencies:** APP-027.
+
+**Status:** Done.
+
+**Completed:**
+- Added visible labels to session name generation and local save controls.
+- Renamed the cloud-save action to `Save Cloud`.
+- Routed session-manager flyer buttons through a direct App callback for more reliable lazy loading.
+- Updated e2e coverage for the clarified Studio commands.
+
+---
+
+### APP-029: Share Flow Copy Clarity
+
+**Goal:** Make offline sharing and cloud saving feel like two different, understandable actions.
+
+**Scope:**
+- Rename the Studio share-panel trigger to `Offline Share`.
+- Clarify that share codes/browser hash links are temporary browser snapshots.
+- Explain that `Save Cloud` creates public set pages and account-library storage.
+- Add an empty cloud-link hint inside the share panel.
+- Cover the clarified share panel in browser smoke tests.
+
+**Acceptance Criteria:**
+- Users can distinguish offline share codes from cloud-saved public set links.
+- The share panel points users to `Save Cloud` when they want a public cloud link.
+- Existing save, share, flyer, Account, and public-route smoke tests pass.
+
+**Dependencies:** APP-028.
+
+**Status:** Done.
+
+**Completed:**
+- Renamed `Share Link` to `Offline Share`.
+- Added share-panel helper copy for offline vs cloud paths.
+- Added e2e coverage for the clarified share panel.
+
+---
+
+### APP-030: Footer Product Polish
+
+**Goal:** Make the app footer feel production-ready and avoid exposing personal contact details in the public UI.
+
+**Scope:**
+- Remove the personal operator email from the in-app footer.
+- Replace template-like labels with product status and safety chips.
+- Keep the footer compact across desktop and mobile layouts.
+
+**Acceptance Criteria:**
+- Footer no longer displays personal email/contact info.
+- Footer communicates app identity and safe deployment posture.
+- Layout remains responsive and does not overlap adjacent content.
+
+**Dependencies:** APP-027.
+
+**Status:** Done.
+
+**Completed:**
+- Replaced footer content with app identity, offline-ready status, server-side key posture, and local Web Audio engine status.
+
+---
+
+### APP-031: Header Shortcuts Discovery
+
+**Goal:** Make keyboard controls discoverable from the main header instead of relying on a floating help button.
+
+**Scope:**
+- Add a `Shortcuts` header action beside Guided Tour.
+- Reuse the existing keyboard shortcuts modal and event path.
+- Cover the header shortcut launch path in browser smoke tests.
+
+**Acceptance Criteria:**
+- Header exposes a visible `Shortcuts` action.
+- Clicking it opens the existing shortcuts modal.
+- Users can close the modal and continue using Studio.
+- Existing Studio, Account, flyer, and public-route smoke tests pass.
+
+**Dependencies:** APP-030.
+
+**Status:** Done.
+
+**Completed:**
+- Added a header `Shortcuts` button.
+- Added e2e coverage for opening and closing the shortcuts modal.
+
+---
+
+### APP-032: Dismissible Action Toasts
+
+**Goal:** Make save/share/auth feedback easier to notice and control.
+
+**Scope:**
+- Move action feedback from the session panel bottom to a fixed toast.
+- Add a dismiss button and polite status semantics.
+- Clear previous toast timers before showing a new message.
+- Cover local-save feedback in browser smoke tests.
+
+**Acceptance Criteria:**
+- Save/share feedback appears in a consistent visible toast.
+- Users can dismiss the message manually.
+- Repeated actions do not leave stale timers fighting each other.
+- Existing Studio, Account, flyer, and public-route smoke tests pass.
+
+**Dependencies:** APP-028, APP-031.
+
+**Status:** Done.
+
+**Completed:**
+- Added fixed dismissible action toasts.
+- Added safer toast timer handling.
+- Added e2e coverage for the local save confirmation toast.
+
+---
+
+### APP-033: Guided Tour Copy Refresh
+
+**Goal:** Make first-run guidance match the real Studio controls and current save/share model.
+
+**Scope:**
+- Replace stale preset-focused tour copy with practical product guidance.
+- Explain the difference between `Save Local`, `Save Cloud`, and `Offline Share`.
+- Keep the existing guided tour targets and navigation behavior.
+- Cover the header guided-tour path in browser smoke tests.
+
+**Acceptance Criteria:**
+- Guided Tour opens from the header and starts with clear power guidance.
+- The session cabinet step references current save/share controls.
+- Tour copy no longer points users toward removed preset labels.
+- Existing Studio, Account, flyer, and public-route smoke tests pass.
+
+**Dependencies:** APP-028, APP-031.
+
+**Status:** Done.
+
+**Completed:**
+- Refreshed all guided-tour step titles, descriptions, and action hints.
+- Added e2e coverage for opening the tour and advancing to the save/share step.
+
+---
+
+### APP-034: Cloud Save Readiness Strip
+
+**Goal:** Make the Studio explain what `Save Cloud` will do before the user clicks it.
+
+**Scope:**
+- Add a compact cloud-save status strip above the Studio save controls.
+- Show whether the current cloud path is account-library storage or public-link-only storage.
+- Explain that signed-out users should use Account sign-in to keep mixes in their library.
+- Cover the unsigned Studio state in browser smoke tests.
+
+**Acceptance Criteria:**
+- Studio shows the current cloud-save mode near `Save Cloud`.
+- Signed-out users see that cloud saving creates a public link but does not attach to their library.
+- The copy points users to Account sign-in without changing save behavior.
+- Existing Studio, Account, flyer, and public-route smoke tests pass.
+
+**Dependencies:** APP-028, APP-033.
+
+**Status:** Done.
+
+**Completed:**
+- Added `Cloud Save Mode` status copy to the Studio session cabinet.
+- Added e2e coverage for the public-link-only unsigned state.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

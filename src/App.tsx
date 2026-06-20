@@ -9,7 +9,7 @@ import EffectsRack from './components/EffectsRack';
 import AudioVisualizer from './components/AudioVisualizer';
 import UserProfileAndSessionManager from './components/UserProfileAndSessionManager';
 import AchievementsPanel from './components/AchievementsPanel';
-import { Power, Radio, Disc, Terminal, Award, Zap, Shield, Headphones, HelpCircle, Palette, User } from 'lucide-react';
+import { Power, Radio, Disc, Terminal, Award, Zap, Shield, Headphones, HelpCircle, Palette, User, Keyboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import OnboardingTour from './components/OnboardingTour';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
@@ -111,6 +111,14 @@ function StudioApp() {
     }
   };
 
+  const openPosterGenerator = (detail: { sessionName?: string; bpm?: number } = {}) => {
+    setPosterData({
+      isOpen: true,
+      sessionName: detail.sessionName,
+      bpm: detail.bpm,
+    });
+  };
+
   useEffect(() => {
     const handleToggleEvent = () => {
       handlePowerToggle();
@@ -122,12 +130,7 @@ function StudioApp() {
   useEffect(() => {
     const handleOpenPoster = (e: Event) => {
       const customEvent = e as CustomEvent;
-      const detail = customEvent.detail || {};
-      setPosterData({
-        isOpen: true,
-        sessionName: detail.sessionName,
-        bpm: detail.bpm
-      });
+      openPosterGenerator(customEvent.detail || {});
     };
     window.addEventListener('open-poster-generator', handleOpenPoster);
     return () => window.removeEventListener('open-poster-generator', handleOpenPoster);
@@ -229,15 +232,24 @@ function StudioApp() {
               </div>
             </div>
 
-            {/* Guide Tour Launcher Button */}
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('trigger-onboarding-tour'))}
-              className="flex items-center gap-2 px-4 py-4 rounded-2xl border border-zinc-800 bg-zinc-950/40 hover:bg-zinc-900/40 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all font-mono text-xs uppercase font-extrabold tracking-widest cursor-pointer"
-              title="Launch Guided Operational Tour"
-            >
-              <HelpCircle size={14} className="text-zinc-500 hover:text-orange-400 transition" />
-              <span>GUIDED TOUR</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('trigger-onboarding-tour'))}
+                className="flex items-center gap-2 px-4 py-4 rounded-2xl border border-zinc-800 bg-zinc-950/40 hover:bg-zinc-900/40 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all font-mono text-xs uppercase font-extrabold tracking-widest cursor-pointer"
+                title="Launch Guided Operational Tour"
+              >
+                <HelpCircle size={14} className="text-zinc-500 hover:text-orange-400 transition" />
+                <span>GUIDED TOUR</span>
+              </button>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('trigger-shortcuts-help'))}
+                className="flex items-center gap-2 px-4 py-4 rounded-2xl border border-zinc-800 bg-zinc-950/40 hover:bg-zinc-900/40 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all font-mono text-xs uppercase font-extrabold tracking-widest cursor-pointer"
+                title="Show keyboard shortcuts"
+              >
+                <Keyboard size={14} className="text-zinc-500 hover:text-cyan-300 transition" />
+                <span>SHORTCUTS</span>
+              </button>
+            </div>
 
             {/* Red Monolithic Master Switch */}
             <button
@@ -273,7 +285,11 @@ function StudioApp() {
 
         {activeWorkspace === 'account' ? (
           <div className="mt-2">
-            <UserProfileAndSessionManager mode="account" onOpenStudio={() => setActiveWorkspace('studio')} />
+            <UserProfileAndSessionManager
+              mode="account"
+              onOpenStudio={() => setActiveWorkspace('studio')}
+              onOpenPoster={openPosterGenerator}
+            />
           </div>
         ) : (
           <>
@@ -352,7 +368,7 @@ function StudioApp() {
 
             {/* LOG SYSTEM, DIGITAL AUDIO CARTRIDGE CABINET, AND SESSION LOBBY */}
             <div className={`${mobileVisibleSection === 'all' || mobileVisibleSection === 'profile' ? 'block' : 'hidden lg:block'}`}>
-              <UserProfileAndSessionManager />
+              <UserProfileAndSessionManager onOpenPoster={openPosterGenerator} />
               
               {/* LIVE RAVE REWARDS & CROWD LEVEL STATS */}
               <div className="mt-6">
@@ -379,26 +395,24 @@ function StudioApp() {
           </>
         )}
 
-        {/* STATIC ANALOG WIRES & ACCENTS FOOTER */}
-        <footer className="mt-8 border-t border-zinc-850 pt-6 pr-1 flex flex-col lg:flex-row items-center justify-between text-[11px] font-mono text-zinc-600 gap-4">
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
-            <span className="flex items-center gap-1"><Terminal size={12} /> INTERACTIVE SIMULATOR</span>
-            <span>•</span>
-            <span className="flex items-center gap-1"><Award size={12} /> CROWD SYNC APPROVED</span>
-            <span>•</span>
-            <span className="flex items-center gap-1"><Shield size={12} /> OFFLINE HARDWARE ROUTING</span>
+        <footer className="mt-8 border-t border-zinc-850 pt-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 font-mono">
+          <div className="flex flex-wrap items-center gap-2 text-[9px] font-extrabold uppercase tracking-widest text-zinc-500">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-850 bg-zinc-950/45 px-3 py-2">
+              <Terminal size={12} className="text-cyan-400" />
+              Underground DJ Monolith
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-850 bg-zinc-950/45 px-3 py-2">
+              <Award size={12} className="text-orange-400" />
+              v2.66 offline-ready
+            </span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-3 bg-zinc-950/40 px-4 py-2 border border-zinc-850/60 rounded-2xl">
-            <span className="text-[9px] uppercase tracking-widest text-zinc-500 font-extrabold">RESIDENT OPERATOR:</span>
-            <a 
-              href="mailto:jimemettr@gmail.com" 
-              className="text-orange-400 hover:text-orange-300 font-bold tracking-wider hover:underline transition duration-155"
-            >
-              jimemettr@gmail.com
-            </a>
-            <span className="text-zinc-600">•</span>
-            <span className="text-[9px] font-extrabold uppercase tracking-widest text-zinc-400 bg-zinc-900/60 px-2 py-0.5 rounded-lg border border-zinc-850">
-              SYSTEMS ARCHITECT
+          <div className="flex flex-wrap items-center gap-2 text-[9px] font-extrabold uppercase tracking-widest text-zinc-500">
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-emerald-300">
+              <Shield size={12} />
+              Keys server-side
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-850 bg-zinc-950/45 px-3 py-2">
+              Web Audio local engine
             </span>
           </div>
         </footer>

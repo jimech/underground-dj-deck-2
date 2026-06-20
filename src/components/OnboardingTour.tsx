@@ -23,52 +23,52 @@ export default function OnboardingTour() {
 
   const steps: TourStep[] = [
     {
-      title: "🔌 BOOT MASTER POWER",
+      title: "Power The Desk",
       targetId: "master-power-btn",
-      description: "Supply high-voltage current to the virtual Web Audio circuitry. Until powered on, browsers block all background synthesis blocks.",
+      description: "Start here before playback. The Studio waits for a user gesture before it can run browser audio.",
       badge: "STEP 1 OF 6",
       icon: <Power className="w-5 h-5 text-rose-500 animate-pulse" />,
-      hint: "Flip this master red trigger first."
+      hint: "Press the main power control first."
     },
     {
-      title: "📂 LOAD MONOLITH PRESETS",
+      title: "Save And Share Mixes",
       targetId: "dj-custom-station-center",
-      description: "Inject pre-composed industrial grids. Click either ACID or DRONE preset inside this cabinet to wire all mixer values instantly.",
+      description: "This cabinet is where mixes become real assets. Save locally for offline work, save to cloud for your account, or create an offline share snapshot.",
       badge: "STEP 2 OF 6",
       icon: <Sparkles className="w-5 h-5 text-amber-500" />,
-      hint: "Press 'LOCK ACID PRESET' or 'CORE DRONE PRESET'."
+      hint: "Use Save Local, Save Cloud, or Offline Share."
     },
     {
-      title: "🥁 INITIATE RHYTHM GRID",
+      title: "Build A Rhythm",
       targetId: "sequencer-widget",
-      description: "Trigger the 16-step modular sequencer. Press the PLAY button here to start the running analog kick and synthesizer crawls.",
+      description: "The sequencer drives the beat grid. Pick a preset, adjust the steps, and start playback when the pattern feels right.",
       badge: "STEP 3 OF 6",
       icon: <LayoutGrid className="w-5 h-5 text-orange-500" />,
-      hint: "Drag the BPM slider to sweep performance speed settings."
+      hint: "Use presets for a fast start, then tune BPM."
     },
     {
-      title: "🎮 WHIP VINYL SPINDLES",
+      title: "Cue The Decks",
       targetId: "deck-A",
-      description: "Activate Deck A (or Deck B) to start the high-fidelity sound rails. Hold and mouse-drag the spinning vinyl platter to perform manual scratching.",
+      description: "Deck A and Deck B hold the playable tracks. Start a deck, pick cassette slots, and blend both sides from the mixer.",
       badge: "STEP 4 OF 6",
       icon: <Disc className="w-5 h-5 text-cyan-500" />,
-      hint: "Slide the crossfader in the mixer to blend deck feeds."
+      hint: "Use the mixer crossfader to blend decks."
     },
     {
-      title: "⚡ SWEEP SYSTEM RESONANCE",
+      title: "Shape Effects",
       targetId: "kaoss-effects-rack",
-      description: "Control the 2D Kaoss touch rack and MPC samplers. Drag over the touchpad layout to sweep industrial band filters and lowpass echoes.",
+      description: "Use the performance effects for movement: filters, echo, roll, texture, and sampler hits live beside the deck controls.",
       badge: "STEP 5 OF 6",
       icon: <Sliders className="w-5 h-5 text-zinc-400" />,
-      hint: "Tap any sampler pads to fire industrial impact hits."
+      hint: "Drag the pad and trigger sampler buttons."
     },
     {
-      title: "📼 RECORD & EXPORT WAV",
+      title: "Record The Set",
       targetId: "tape-recorder-widget",
-      description: "Press REC on the master cassette deck spool. After recording, press STOP and click EXPORT WAV to compile a lossless CD-quality audio export.",
+      description: "Capture the final pass when the mix is ready. Stop the recorder, export the audio, and keep the saved session for the setup state.",
       badge: "STEP 6 OF 6",
       icon: <Save className="w-5 h-5 text-emerald-500 font-extrabold" />,
-      hint: "Packs and downloads actual WAV binaries to your desk."
+      hint: "Record audio, then export the finished take."
     }
   ];
 
