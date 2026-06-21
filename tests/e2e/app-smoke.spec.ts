@@ -178,6 +178,21 @@ test('loads the app, initializes the desk, and renders the session cabinet', asy
       }),
     });
   });
+  await page.route('http://localhost:8787/api/health', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        service: 'underground-dj-api',
+        storage: {
+          configuredDriver: 'supabase',
+          activeDriver: 'supabase',
+          persistent: true,
+        },
+      }),
+    });
+  });
 
   await page.goto('/');
 
@@ -199,6 +214,8 @@ test('loads the app, initializes the desk, and renders the session cabinet', asy
   await expect(page.getByPlaceholder('NAME CURRENT MIX...')).toBeVisible();
   await expect(page.getByText('Cloud Save Mode')).toBeVisible();
   await expect(page.getByText('Public Link Only')).toBeVisible();
+  await expect(page.getByText('Supabase Persistent')).toBeVisible();
+  await expect(page.getByText('Cloud saves are using persistent Supabase storage.')).toBeVisible();
   await expect(page.getByText('Save Cloud creates a public set link. Sign in from Account to keep mixes in your library.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Name' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save Local' })).toBeVisible();
@@ -284,6 +301,7 @@ test('shows a safe cloud-save storage error when the API rejects the save', asyn
 
   await page.goto('/');
   await page.getByRole('button', { name: 'INITIALIZE MIXING DESK' }).click();
+  await expect(page.getByText('API Offline')).toBeVisible();
   await page.getByRole('button', { name: /Save Cloud Public Link/i }).click();
 
   await expect(page.getByRole('status')).toContainText(/cloud save storage is not ready/i);

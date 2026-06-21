@@ -94,6 +94,13 @@ Run local checks before pushing:
 npm run verify
 ```
 
+Check local/deployment env readiness without printing secret values:
+
+```bash
+npm run deploy:doctor
+npm run deploy:doctor:prod
+```
+
 After backend/frontend deploy:
 
 ```bash

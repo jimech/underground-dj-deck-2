@@ -14,6 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "deploy:doctor": "node scripts/deploy-doctor.mjs",
+    "deploy:doctor:prod": "node scripts/deploy-doctor.mjs --production",
     "secret:scan": "node scripts/scan-secrets.mjs",
     "verify": "npm run secret:scan && npm run lint && npm test && npm run build && npm run test:e2e",
     "smoke:prod": "node scripts/smoke-production.mjs"

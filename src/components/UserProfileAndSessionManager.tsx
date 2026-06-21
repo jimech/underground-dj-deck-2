@@ -14,6 +14,7 @@ import {
   generateSessionNames,
   getProfile as getCloudProfile,
   getSession as getCloudSession,
+  healthCheck,
   listSessions as listCloudSessions,
   saveProfile as saveCloudProfile,
   saveSession as saveCloudSession,
@@ -91,6 +92,11 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenAcco
   const [isGeneratingSessionName, setIsGeneratingSessionName] = useState(false);
   const [cloudSessions, setCloudSessions] = useState<SessionResponse[]>([]);
   const [isCloudLibraryLoading, setIsCloudLibraryLoading] = useState(false);
+  const [cloudRuntime, setCloudRuntime] = useState({
+    label: 'Checking API',
+    detail: 'Checking backend health.',
+    tone: 'checking' as 'checking' | 'offline' | 'memory' | 'persistent',
+  });
 
   useEffect(() => {
     if (!supabaseBrowserClient) {
@@ -341,6 +347,55 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenAcco
   const cloudSaveHint = authUser
     ? 'Save Cloud adds this mix to Saved Mixes and copies a public set page link.'
     : 'Save Cloud creates a public set link. Sign in from Account to keep mixes in your library.';
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const checkRuntime = async () => {
+      const result = await healthCheck();
+      if (isCancelled) return;
+
+      if (result.ok === false) {
+        setCloudRuntime({
+          label: 'API Offline',
+          detail: 'Backend API is not reachable from this browser.',
+          tone: 'offline',
+        });
+        return;
+      }
+
+      const storage = result.data.storage;
+      if (!storage) {
+        setCloudRuntime({
+          label: 'API Online',
+          detail: 'Health check passed, storage mode unavailable.',
+          tone: 'checking',
+        });
+        return;
+      }
+
+      if (storage.persistent && storage.activeDriver === 'supabase') {
+        setCloudRuntime({
+          label: 'Supabase Persistent',
+          detail: 'Cloud saves are using persistent Supabase storage.',
+          tone: 'persistent',
+        });
+        return;
+      }
+
+      setCloudRuntime({
+        label: 'Memory Storage',
+        detail: 'Cloud saves work for this API process but may reset on restart.',
+        tone: 'memory',
+      });
+    };
+
+    checkRuntime();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const refreshCloudSessions = async (showAlert = false) => {
     if (!authUser) {
@@ -1349,17 +1404,35 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenAcco
 
         {!isAccountMode && (
           <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/[0.04] px-3 py-2.5 flex flex-col gap-1.5">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[7.5px] font-mono font-extrabold uppercase tracking-widest text-zinc-500">
-                Cloud Save Mode
-              </span>
-              <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[7px] font-mono font-extrabold uppercase tracking-widest ${
-                authUser
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                  : 'border-cyan-500/25 bg-cyan-500/10 text-cyan-300'
-              }`}>
-                {cloudSaveMode}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-col gap-1">
+                <span className="text-[7.5px] font-mono font-extrabold uppercase tracking-widest text-zinc-500">
+                  Cloud Save Mode
+                </span>
+                <span className="text-[7px] font-mono uppercase tracking-wider text-zinc-600">
+                  {cloudRuntime.detail}
+                </span>
+              </div>
+              <div className="flex flex-wrap justify-end gap-1.5">
+                <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[7px] font-mono font-extrabold uppercase tracking-widest ${
+                  authUser
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                    : 'border-cyan-500/25 bg-cyan-500/10 text-cyan-300'
+                }`}>
+                  {cloudSaveMode}
+                </span>
+                <span className={`shrink-0 rounded-md border px-2 py-0.5 text-[7px] font-mono font-extrabold uppercase tracking-widest ${
+                  cloudRuntime.tone === 'persistent'
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                    : cloudRuntime.tone === 'memory'
+                    ? 'border-amber-500/35 bg-amber-500/10 text-amber-300'
+                    : cloudRuntime.tone === 'offline'
+                    ? 'border-rose-500/35 bg-rose-500/10 text-rose-300'
+                    : 'border-zinc-700 bg-zinc-950/50 text-zinc-400'
+                }`}>
+                  {cloudRuntime.label}
+                </span>
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
               <span className="text-[8px] font-mono leading-relaxed uppercase tracking-wider text-zinc-500">

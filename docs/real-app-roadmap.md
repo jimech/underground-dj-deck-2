@@ -982,6 +982,87 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-039: Cloud Runtime Health Badge
+
+**Goal:** Show users whether cloud saves are backed by a reachable API and persistent storage.
+
+**Scope:**
+- Call the existing `/api/health` endpoint from the Studio cloud-save strip.
+- Display non-sensitive runtime labels such as `API Offline`, `Memory Storage`, and `Supabase Persistent`.
+- Explain the storage state without exposing URLs, keys, or raw backend errors.
+- Cover persistent Supabase and offline API states in browser smoke tests.
+
+**Acceptance Criteria:**
+- Studio shows backend/storage health near `Save Cloud`.
+- Persistent Supabase storage is clearly marked when health reports it.
+- Offline or missing API is clearly marked without breaking local Studio use.
+- Existing Studio, Account, flyer, and public-route smoke tests pass.
+
+**Dependencies:** APP-025, APP-034, APP-038.
+
+**Status:** Done.
+
+**Completed:**
+- Added a cloud runtime health check to the session manager.
+- Added safe status labels and helper text to the Studio cloud-save strip.
+- Added e2e coverage for persistent Supabase health and offline API state.
+
+---
+
+### APP-040: Deploy Env Doctor
+
+**Goal:** Make manual deployment configuration easier to verify without printing or committing secrets.
+
+**Scope:**
+- Add a local deploy doctor script that checks required frontend and backend env vars.
+- Support production mode checks for localhost URLs and Supabase storage settings.
+- Fail when secret-looking values are exposed through public `VITE_*` env vars.
+- Add unit coverage and document the command in the deployment checklist.
+
+**Acceptance Criteria:**
+- The command reports missing/placeholder env vars without printing actual values.
+- Production mode rejects localhost deployment URLs.
+- Public env vars cannot include service-role or secret-looking names.
+- Existing verify checks pass.
+
+**Dependencies:** APP-025, APP-038, APP-039.
+
+**Status:** Done.
+
+**Completed:**
+- Added `npm run deploy:doctor`.
+- Added production env validation and safe report formatting.
+- Added unit tests for secret-safe reporting, localhost rejection, and public secret-name rejection.
+- Updated the manual deployment checklist.
+
+---
+
+### APP-041: Production Deploy Doctor Shortcut
+
+**Goal:** Make production env validation easy to run without remembering npm argument forwarding.
+
+**Scope:**
+- Add a dedicated production deploy-doctor npm script.
+- Keep the existing local deploy-doctor command unchanged.
+- Document the production shortcut in the manual deployment checklist.
+- Cover production-mode report labeling in unit tests.
+
+**Acceptance Criteria:**
+- `npm run deploy:doctor:prod` runs production validation.
+- The report clearly says it is in production mode.
+- Documentation points users to the shortcut command.
+- Existing verify checks pass.
+
+**Dependencies:** APP-040.
+
+**Status:** Done.
+
+**Completed:**
+- Added `npm run deploy:doctor:prod`.
+- Updated deploy-doctor tests and deployment docs.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:
