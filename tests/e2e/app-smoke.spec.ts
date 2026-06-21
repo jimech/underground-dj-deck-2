@@ -1,6 +1,6 @@
 import { expect, type ConsoleMessage, type Page, test } from '@playwright/test';
 
-function collectUnexpectedConsoleErrors(page: Page) {
+function collectUnexpectedConsoleErrors(page: Page, expectedErrorPatterns: RegExp[] = []) {
   const errors: string[] = [];
 
   page.on('pageerror', (error) => errors.push(error.message));
@@ -12,12 +12,14 @@ function collectUnexpectedConsoleErrors(page: Page) {
       && message.location().url.includes('/api/public/');
     const isExpectedMissingLocalApi = text.includes('Failed to load resource: net::ERR_CONNECTION_REFUSED')
       && message.location().url.includes('localhost:8787/api/');
+    const isExpectedByTest = expectedErrorPatterns.some((pattern) => pattern.test(text));
 
     if (
       message.type() === 'error'
       && !isExpectedMissingLocalApi
       && !isExpectedMissingFirstRunProfile
       && !isExpectedMissingPublicRoute
+      && !isExpectedByTest
     ) {
       errors.push(text);
     }
@@ -198,11 +200,6 @@ test('loads the app, initializes the desk, and renders the session cabinet', asy
   await expect(page.getByText('Cloud Save Mode')).toBeVisible();
   await expect(page.getByText('Public Link Only')).toBeVisible();
   await expect(page.getByText('Save Cloud creates a public set link. Sign in from Account to keep mixes in your library.')).toBeVisible();
-  await page.getByRole('button', { name: 'Open Account' }).click();
-  await expect(page.getByText('ACCOUNT LIBRARY & SAVED MIXES')).toBeVisible();
-  await expect(page).toHaveTitle('Account Library | Underground DJ Monolith');
-  await page.getByRole('button', { name: 'Studio', exact: true }).click();
-  await expect(page.getByText('SESSION STORAGE CABINET & MIX ARCHIVE')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Name' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save Local' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save Cloud' })).toBeVisible();
@@ -246,6 +243,52 @@ test('opens the account library from standby without powering audio', async ({ p
   await page.getByRole('button', { name: 'Open Studio' }).click();
   await expect(page.getByRole('heading', { name: 'CONSOLE STANDBY' })).toBeVisible();
   await expect(page).toHaveTitle('Studio | Underground DJ Monolith');
+  expect(errors).toEqual([]);
+});
+
+test('opens account from the studio cloud-save helper', async ({ page }) => {
+  const errors = collectUnexpectedConsoleErrors(page);
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'INITIALIZE MIXING DESK' }).click();
+
+  await expect(page.getByText('Cloud Save Mode')).toBeVisible();
+  await page.getByRole('button', { name: 'Open Account', exact: true }).click();
+
+  await expect(page.getByText('ACCOUNT LIBRARY & SAVED MIXES')).toBeVisible();
+  await expect(page).toHaveTitle('Account Library | Underground DJ Monolith');
+  await page.getByRole('button', { name: 'Studio', exact: true }).click();
+  await expect(page.getByText('SESSION STORAGE CABINET & MIX ARCHIVE')).toBeVisible();
+  await expect(page).toHaveTitle('Studio | Underground DJ Monolith');
+  expect(errors).toEqual([]);
+});
+
+test('shows a safe cloud-save storage error when the API rejects the save', async ({ page }) => {
+  const errors = collectUnexpectedConsoleErrors(page, [/500 \(Internal Server Error\)/]);
+
+  await page.route('http://localhost:8787/api/sessions', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+
+    await route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        error: 'Storage unavailable',
+        detail: 'Failed to save Supabase session: relation missing',
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'INITIALIZE MIXING DESK' }).click();
+  await page.getByRole('button', { name: /Save Cloud Public Link/i }).click();
+
+  await expect(page.getByRole('status')).toContainText(/cloud save storage is not ready/i);
+  await expect(page.getByRole('status')).toContainText(/supabase migrations and server-only backend credentials/i);
+  await expect(page.getByRole('status')).not.toContainText(/relation missing/i);
   expect(errors).toEqual([]);
 });
 

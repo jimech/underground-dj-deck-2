@@ -955,6 +955,33 @@ This roadmap moves the project from a full-stack portfolio prototype into a prod
 
 ---
 
+### APP-038: Cloud Save Error UX
+
+**Goal:** Make failed `Save Cloud` attempts explain the likely fix without exposing backend details or secrets.
+
+**Scope:**
+- Add a small client-side classifier for common cloud-save failures.
+- Show specific, safe messages for unreachable API, expired sign-in, payload limit, rate limit, and storage/Supabase setup issues.
+- Avoid displaying raw database/Supabase error detail in user-facing toasts.
+- Cover storage failure messaging in browser smoke tests.
+
+**Acceptance Criteria:**
+- API/network failures point users toward backend availability or `VITE_API_BASE_URL`.
+- Storage failures point users toward Supabase migrations and server-only backend credentials.
+- Raw database details are not shown in the toast.
+- Existing Studio, Account, flyer, and public-route smoke tests pass.
+
+**Dependencies:** APP-034, APP-037.
+
+**Status:** Done.
+
+**Completed:**
+- Added safe cloud-save failure message classification.
+- Replaced raw cloud-save error detail in the Studio toast.
+- Added e2e coverage for a mocked Supabase storage failure.
+
+---
+
 ## Recommended Next Step
 
 Deploy the backend and frontend manually when you are ready:

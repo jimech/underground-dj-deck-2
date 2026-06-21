@@ -585,6 +585,37 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenAcco
     }
   };
 
+  const getCloudSaveFailureMessage = (failure: { status?: number; error?: string; detail?: string }) => {
+    const detail = failure.detail || failure.error || '';
+    const lowerDetail = detail.toLowerCase();
+
+    if (!failure.status || lowerDetail.includes('failed to fetch') || lowerDetail.includes('network')) {
+      return 'Cloud save unavailable: API is not reachable. Start the backend or check VITE_API_BASE_URL.';
+    }
+
+    if (failure.status === 401 || failure.status === 403) {
+      return 'Cloud save needs a fresh sign-in. Open Account and send a new magic link.';
+    }
+
+    if (failure.status === 413) {
+      return 'Cloud save rejected: this mix is too large for the API limit.';
+    }
+
+    if (failure.status === 429) {
+      return 'Cloud save paused by rate limits. Wait a minute, then try again.';
+    }
+
+    if (lowerDetail.includes('supabase') || lowerDetail.includes('storage') || lowerDetail.includes('database')) {
+      return 'Cloud save storage is not ready. Check Supabase migrations and server-only backend credentials.';
+    }
+
+    if (failure.status >= 500) {
+      return 'Cloud save failed on the API. Check backend logs and Supabase storage configuration.';
+    }
+
+    return detail ? `Cloud save failed: ${detail}` : 'Cloud save failed. Try again or check the backend.';
+  };
+
   const saveCurrentSessionToCloud = async () => {
     if (isCloudSaving) return;
 
@@ -595,8 +626,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenAcco
     try {
       const result = await saveCloudSession(liveRig);
       if (result.ok === false) {
-        const detail = result.detail ? ` ${result.detail}` : '';
-        triggerAlert(`Cloud save failed.${detail}`, 'error');
+        triggerAlert(getCloudSaveFailureMessage(result), 'error');
         return;
       }
 
@@ -612,7 +642,7 @@ export default function UserProfileAndSessionManager({ mode = 'full', onOpenAcco
         triggerAlert(`Cloud set link created for "${result.data.session.name}". Copy it from the share panel.`, 'success');
       }
     } catch (err: any) {
-      triggerAlert(err?.message || 'Cloud save failed. Is the API server running?', 'error');
+      triggerAlert(getCloudSaveFailureMessage({ error: err?.message }), 'error');
     } finally {
       setIsCloudSaving(false);
     }
